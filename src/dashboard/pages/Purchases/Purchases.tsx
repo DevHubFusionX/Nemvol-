@@ -5,16 +5,20 @@ import PurchasesTabs, { type PurchaseTab } from './PurchasesTabs';
 import PurchasesToolbar from './PurchasesToolbar';
 import PurchasesTable from './PurchasesTable';
 import SuppliersView from './SuppliersView';
+import AddPurchaseDrawer from './modals/AddPurchaseDrawer';
+import AddSupplierDrawer from './modals/AddSupplierDrawer';
 
 type StatusFilter = 'all' | 'pending' | 'completed';
 
 export default function Purchases() {
   const [tab, setTab] = useState<PurchaseTab>('purchases');
   const [filter, setFilter] = useState<StatusFilter>('all');
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [supplierOpen, setSupplierOpen] = useState(false);
 
   return (
     <div className="space-y-5">
-      <PurchasesHeader />
+      <PurchasesHeader onAddPurchase={() => setPurchaseOpen(true)} />
       <PurchasesStats />
       <PurchasesTabs active={tab} onChange={setTab} />
 
@@ -25,7 +29,10 @@ export default function Purchases() {
         </>
       )}
 
-      {tab === 'suppliers' && <SuppliersView />}
+      {tab === 'suppliers' && <SuppliersView onAddSupplier={() => setSupplierOpen(true)} />}
+
+      <AddPurchaseDrawer open={purchaseOpen} onClose={() => setPurchaseOpen(false)} />
+      <AddSupplierDrawer open={supplierOpen} onClose={() => setSupplierOpen(false)} />
     </div>
   );
 }

@@ -1,6 +1,10 @@
-import { Building2 } from 'lucide-react';
+import { Building2, Plus } from 'lucide-react';
 
-export default function SuppliersView() {
+interface Props {
+  onAddSupplier: () => void;
+}
+
+export default function SuppliersView({ onAddSupplier }: Props) {
   return (
     <div className="bg-white rounded-xl border border-slate-100">
       <div className="px-5 py-4 border-b border-slate-100">
@@ -17,6 +21,13 @@ export default function SuppliersView() {
         <p className="text-[12px] text-slate-400 text-center max-w-xs">
           Add your suppliers to link them to purchase orders and track deliveries.
         </p>
+        <button
+          onClick={onAddSupplier}
+          className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors"
+        >
+          <Plus size={14} strokeWidth={2.5} />
+          Add Supplier
+        </button>
       </div>
     </div>
   );

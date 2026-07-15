@@ -93,7 +93,7 @@ export default function BillingPlans() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
         {plans.map((plan) => (
           <div
             key={plan.id}

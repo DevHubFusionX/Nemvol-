@@ -45,8 +45,8 @@ export default function BillingTable() {
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-        <table className="w-full text-left">
+      <div className="bg-white rounded-xl border border-slate-100 overflow-x-auto">
+        <table className="w-full text-left min-w-[540px]">
           <thead>
             <tr className="border-b border-slate-100">
               <th className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400 w-1/2">

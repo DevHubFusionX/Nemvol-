@@ -7,7 +7,8 @@ export default function PurchasesTable() {
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-      <div className="grid grid-cols-7 px-5 py-3 border-b border-slate-100">
+      {/* Header — desktop only */}
+      <div className="hidden sm:grid grid-cols-7 px-5 py-3 border-b border-slate-100">
         {cols.map((col) => (
           <span key={col} className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
             {col}

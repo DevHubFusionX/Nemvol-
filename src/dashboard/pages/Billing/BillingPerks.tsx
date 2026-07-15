@@ -9,7 +9,7 @@ const perks = [
 
 export default function BillingPerks() {
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
       {perks.map(({ icon: Icon, label, sub }) => (
         <div key={label} className="bg-white rounded-xl border border-slate-100 p-4 flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
