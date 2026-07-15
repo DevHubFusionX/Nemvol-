@@ -115,10 +115,10 @@ export default function PlanGate({ expired }: { expired?: boolean }) {
                       {plan.icon}
                       <span className="font-semibold text-sm">{plan.name}</span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-lg font-bold text-slate-900">{plan.price}</span>
-                      <span className="text-slate-400 text-[10px] ml-0.5">/{plan.period}</span>
-                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl font-bold text-slate-900">{plan.price}</span>
+                    <span className="text-slate-400 text-[11px] ml-1">/ {plan.period}</span>
                   </div>
                   <ul className="flex flex-col gap-1.5">
                     {plan.features.map(f => (
