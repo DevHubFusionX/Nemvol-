@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;550;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Mulish", system-ui, sans-serif;
+  --color-brand-blue: #0284c7;
+  --color-brand-blue-hover: #0369a1;
+  --color-brand-navy: #0b192e;
+}
+
+.input-field {
+  @apply w-full px-4 py-3 text-[13px] rounded-xl border border-slate-200 focus:outline-none focus:border-[var(--color-brand-blue)] text-slate-800 placeholder:text-slate-300 bg-white transition-colors;
+}
