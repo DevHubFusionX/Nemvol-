@@ -1,16 +1,17 @@
-import { useState } from 'react';
-
 const currencies = [
-  { symbol: '$', name: 'US Dollar', code: 'USD' },
   { symbol: '₦', name: 'Nigerian Naira', code: 'NGN' },
+  { symbol: '$', name: 'US Dollar', code: 'USD' },
   { symbol: '£', name: 'British Pound', code: 'GBP' },
   { symbol: '€', name: 'Euro', code: 'EUR' },
   { symbol: 'GH₵', name: 'Ghanaian Cedi', code: 'GHS' },
 ];
 
-export default function StoreCurrency() {
-  const [selected, setSelected] = useState('NGN');
+interface Props {
+  selected: string;
+  onSelect: (code: string) => void;
+}
 
+export default function StoreCurrency({ selected, onSelect }: Props) {
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-6">
       <p className="text-[14px] font-bold text-slate-900 mb-0.5">Store Currency</p>
@@ -18,11 +19,11 @@ export default function StoreCurrency() {
         Set the base currency for your store products and transactions.
       </p>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {currencies.map(({ symbol, name, code }) => (
           <button
             key={code}
-            onClick={() => setSelected(code)}
+            onClick={() => onSelect(code)}
             className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
               selected === code
                 ? 'border-slate-900 bg-slate-50'
@@ -30,8 +31,8 @@ export default function StoreCurrency() {
             }`}
           >
             <span className="text-[18px] font-bold text-slate-700 w-6 shrink-0">{symbol}</span>
-            <div>
-              <p className="text-[12px] font-semibold text-slate-800 leading-tight">{name}</p>
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold text-slate-800 leading-tight truncate">{name}</p>
               <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{code}</p>
             </div>
           </button>

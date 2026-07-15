@@ -18,6 +18,7 @@ import Shipment from '../dashboard/pages/Shipment/Shipment';
 import StoreInfo from '../dashboard/pages/StoreInfo/StoreInfo';
 import Staffs from '../dashboard/pages/Staffs/Staffs';
 import Billing from '../dashboard/pages/Billing/Billing';
+import Profile from '../dashboard/pages/Profile/Profile';
 import Home from '../pages/Home';
 import About from '../pages/About';
 import Team from '../pages/Team';
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
       { path: 'store-info', element: <StoreInfo /> },
       { path: 'staffs', element: <Staffs /> },
       { path: 'billing', element: <Billing /> },
+      { path: 'profile', element: <Profile /> },
     ],
   },
   {

@@ -1,18 +1,30 @@
-import { useState } from 'react';
+const nigerianStates = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo',
+  'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa',
+  'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba',
+  'Yobe', 'Zamfara',
+];
 
-export default function StoreInformation() {
-  const [form, setForm] = useState({
-    name: 'Devhub',
-    url: 'yourstore',
-    phone: '8030531624',
-    whatsapp: '811 245678',
-    address: 'Nigeria',
-    country: '',
-    state: '',
-  });
+export interface StoreInfoForm {
+  name: string;
+  url: string;
+  phone: string;
+  whatsapp: string;
+  address: string;
+  country: string;
+  state: string;
+}
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm(v => ({ ...v, [k]: e.target.value }));
+interface Props {
+  form: StoreInfoForm;
+  onChange: (form: StoreInfoForm) => void;
+}
+
+export default function StoreInformation({ form, onChange }: Props) {
+  const set = (k: keyof StoreInfoForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      onChange({ ...form, [k]: e.target.value });
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-6">
@@ -21,7 +33,7 @@ export default function StoreInformation() {
         Provide essential details about your store to help customers find you.
       </p>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Store Name */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-semibold text-slate-500">Store Name</label>
@@ -82,9 +94,16 @@ export default function StoreInformation() {
         </div>
 
         {/* State */}
-        <div className="flex flex-col gap-1.5 col-span-2">
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
           <label className="text-[11px] font-semibold text-slate-500">State</label>
-          <input value={form.state} onChange={set('state')} placeholder="Enter state" className="input-field" />
+          {form.country === 'NG' ? (
+            <select value={form.state} onChange={set('state')} className="input-field">
+              <option value="">Select State</option>
+              {nigerianStates.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          ) : (
+            <input value={form.state} onChange={set('state')} placeholder="Enter state / region" className="input-field" />
+          )}
         </div>
       </div>
     </div>

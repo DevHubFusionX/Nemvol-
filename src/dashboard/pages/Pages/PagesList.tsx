@@ -1,21 +1,14 @@
-import { Eye, Pencil } from 'lucide-react';
+import { FileStack, Pencil } from 'lucide-react';
 
-type PageStatus = 'empty' | 'published' | 'draft';
+export type PageStatus = 'empty' | 'published' | 'draft';
 
-type StorePage = {
+export type StorePage = {
   label: string;
+  slug?: string;
   type: 'System Page' | 'Custom Page';
   status: PageStatus;
+  content?: string;
 };
-
-const systemPages: StorePage[] = [
-  { label: 'About Us', type: 'System Page', status: 'empty' },
-  { label: 'Refund Policy', type: 'System Page', status: 'empty' },
-  { label: 'Terms & Conditions', type: 'System Page', status: 'empty' },
-  { label: 'Privacy Policy', type: 'System Page', status: 'empty' },
-  { label: 'Contact Us', type: 'System Page', status: 'empty' },
-  { label: 'FAQ', type: 'System Page', status: 'empty' },
-];
 
 const statusStyles: Record<PageStatus, string> = {
   empty: 'bg-amber-50 text-amber-500',
@@ -29,49 +22,102 @@ const statusLabel: Record<PageStatus, string> = {
   draft: 'Draft',
 };
 
-export default function PagesList() {
+interface Props {
+  pages: StorePage[];
+  onEdit: (page: StorePage) => void;
+}
+
+export default function PagesList({ pages, onEdit }: Props) {
+  if (pages.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-100 flex flex-col items-center justify-center py-20 gap-3">
+        <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">
+          <FileStack size={20} className="text-slate-400" strokeWidth={1.5} />
+        </div>
+        <p className="text-[14px] font-semibold text-slate-800">No pages yet</p>
+        <p className="text-[12px] text-slate-400 text-center max-w-xs">
+          Add a custom page to start building your storefront content.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-      {/* Column headers */}
-      <div className="grid grid-cols-3 px-6 py-3 border-b border-slate-100">
-        {['Page Identity', 'Visibility Status', 'Management'].map((col) => (
+      {/* Column headers — desktop only */}
+      <div className="hidden sm:grid grid-cols-3 px-6 py-3 border-b border-slate-100">
+        {['Page Identity', 'Visibility Status', 'Management'].map(col => (
           <span key={col} className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
             {col}
           </span>
         ))}
       </div>
 
-      {systemPages.map(({ label, type, status }, i) => (
-        <div
-          key={label}
-          className={`grid grid-cols-3 items-center px-6 py-4 ${
-            i < systemPages.length - 1 ? 'border-b border-slate-100' : ''
-          }`}
-        >
-          {/* Identity */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-              <Eye size={14} className="text-slate-400" strokeWidth={1.5} />
+      {pages.map(({ label, type, status, ...rest }, i) => (
+        <div key={label}>
+          {/* Desktop row */}
+          <div
+            className={`hidden sm:grid grid-cols-3 items-center px-6 py-4 ${
+              i < pages.length - 1 ? 'border-b border-slate-100' : ''
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+                <FileStack size={14} className="text-slate-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold text-slate-800">{label}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mt-0.5">
+                  {type}
+                </p>
+              </div>
             </div>
+
             <div>
-              <p className="text-[13px] font-semibold text-slate-800">{label}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mt-0.5">
-                {type}
-              </p>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusStyles[status]}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                {statusLabel[status]}
+              </span>
+            </div>
+
+            <div>
+              <button
+                onClick={() => onEdit({ label, type, status, ...rest })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors w-fit"
+              >
+                <Pencil size={12} strokeWidth={1.8} />
+                Edit Content
+              </button>
             </div>
           </div>
 
-          {/* Status */}
-          <div>
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusStyles[status]}`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {statusLabel[status]}
-            </span>
-          </div>
-
-          {/* Action */}
-          <div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors w-fit">
+          {/* Mobile card */}
+          <div
+            className={`sm:hidden px-4 py-4 ${
+              i < pages.length - 1 ? 'border-b border-slate-100' : ''
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+                  <FileStack size={14} className="text-slate-400" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-slate-800">{label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mt-0.5">
+                    {type}
+                  </p>
+                </div>
+              </div>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusStyles[status]}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                {statusLabel[status]}
+              </span>
+            </div>
+            <button
+              onClick={() => onEdit({ label, type, status, ...rest })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
               <Pencil size={12} strokeWidth={1.8} />
               Edit Content
             </button>
