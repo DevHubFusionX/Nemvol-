@@ -1,11 +1,11 @@
-import { useState } from 'react';
-
 type Method = {
-  id: string;
+  id: PaymentMethodId;
   label: string;
   action: 'toggle' | 'setup';
   setupLabel?: string;
 };
+
+type PaymentMethodId = 'cards' | 'transfer' | 'pod';
 
 const methods: Method[] = [
   { id: 'cards', label: 'Bank Cards', action: 'toggle' },
@@ -31,12 +31,13 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   );
 }
 
-export default function PaymentMethodsTable() {
-  const [enabled, setEnabled] = useState<Record<string, boolean>>({});
+interface Props {
+  enabled: Record<string, boolean>;
+  onToggleMethod: (method: PaymentMethodId) => void;
+  onSetupMethod: (method: PaymentMethodId) => void;
+}
 
-  const toggle = (id: string) =>
-    setEnabled((prev) => ({ ...prev, [id]: !prev[id] }));
-
+export default function PaymentMethodsTable({ enabled, onToggleMethod, onSetupMethod }: Props) {
   return (
     <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
       {/* Column headers */}
@@ -67,11 +68,11 @@ export default function PaymentMethodsTable() {
 
           {action === 'toggle' ? (
             <div className="col-span-2 sm:col-span-1">
-              <Toggle on={!!enabled[id]} onToggle={() => toggle(id)} />
+              <Toggle on={!!enabled[id]} onToggle={() => onToggleMethod(id)} />
             </div>
           ) : (
             <button
-              onClick={() => toggle(id)}
+              onClick={() => onSetupMethod(id)}
               className="col-span-2 sm:col-span-1 text-[13px] font-semibold text-[var(--color-brand-blue)] hover:underline w-fit"
             >
               {enabled[id] ? 'Manage account' : setupLabel}

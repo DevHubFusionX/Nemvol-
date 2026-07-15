@@ -1,7 +1,11 @@
 import { RefreshCw, Plus } from 'lucide-react';
 import { useState } from 'react';
 
-export default function PaymentsHeader() {
+interface Props {
+  onSetPaymentMethod: () => void;
+}
+
+export default function PaymentsHeader({ onSetPaymentMethod }: Props) {
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = () => {
@@ -25,7 +29,10 @@ export default function PaymentsHeader() {
           <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} strokeWidth={1.8} />
           {refreshing ? 'Refreshing' : 'Refresh'}
         </button>
-        <button className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
+        <button
+          onClick={onSetPaymentMethod}
+          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors"
+        >
           <Plus size={14} strokeWidth={2.5} />
           Set Payment Method
         </button>
