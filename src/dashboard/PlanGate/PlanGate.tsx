@@ -96,7 +96,7 @@ export default function PlanGate({ expired }: { expired?: boolean }) {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.07 }}
-                  className={`relative snap-start shrink-0 w-[78vw] rounded-xl border p-4 flex flex-col gap-3 bg-white ${
+                  className={`relative snap-start shrink-0 w-[78vw] rounded-xl border p-6 flex flex-col gap-4 bg-white ${
                     plan.highlight ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
                   }`}
                 >
@@ -152,7 +152,7 @@ export default function PlanGate({ expired }: { expired?: boolean }) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
-                className={`relative rounded-xl border p-5 flex flex-col gap-4 bg-white ${
+                className={`relative rounded-xl border p-8 flex flex-col gap-6 bg-white ${
                   plan.highlight ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
                 }`}
               >
