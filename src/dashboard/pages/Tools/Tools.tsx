@@ -2,7 +2,7 @@ import { useState } from 'react';
 import ToolsHeader from './ToolsHeader';
 import StorefrontContact from './StorefrontContact';
 import LeadCapture from './LeadCapture';
-import MarketingTracking, { trackers } from './MarketingTracking';
+import MarketingTracking from './MarketingTracking';
 import AccessGateDrawer from './modals/AccessGateDrawer';
 import LeadsDrawer from './modals/LeadsDrawer';
 import EditTrackerDrawer, { type TrackerConfig } from './modals/EditTrackerDrawer';

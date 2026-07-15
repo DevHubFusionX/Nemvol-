@@ -8,9 +8,6 @@ interface Props {
   onClose: () => void;
 }
 
-const inputCls =
-  'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[13px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-slate-400 transition-colors bg-white';
-
 const tlds = ['.com', '.store', '.shop', '.co', '.ng', '.io'];
 
 const prices: Record<string, string> = {
