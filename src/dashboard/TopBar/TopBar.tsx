@@ -56,11 +56,8 @@ export default function TopBar({
 
       {/* Center — brand (mobile only) */}
       <div className="flex-1 flex justify-center lg:hidden">
-        <span className="text-[15px] font-bold tracking-tight text-slate-900">
-          Nemvol
-          <span className="ml-1.5 text-[10px] font-semibold text-white bg-[var(--color-brand-blue)] px-1.5 py-0.5 rounded-md leading-none align-middle">
-            CLIENT
-          </span>
+        <span className="text-[15px] font-bold tracking-tight">
+          <span className="text-slate-900">Nem</span><span className="text-[var(--color-brand-blue)]">vol</span>
         </span>
       </div>
 
