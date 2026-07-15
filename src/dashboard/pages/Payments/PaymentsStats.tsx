@@ -10,9 +10,12 @@ const stats = [
 
 export default function PaymentsStats() {
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div
+      className="flex lg:grid lg:grid-cols-4 gap-3 lg:gap-4 overflow-x-auto snap-x snap-mandatory pb-1"
+      style={{ scrollbarWidth: 'none' }}
+    >
       {stats.map(({ label, value, icon: Icon, change, up }) => (
-        <div key={label} className="bg-white rounded-xl border border-slate-100 p-5">
+        <div key={label} className="snap-start shrink-0 w-[82%] sm:w-[46%] lg:w-auto bg-white rounded-xl border border-slate-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center">
               <Icon size={16} className="text-slate-400" strokeWidth={1.5} />
