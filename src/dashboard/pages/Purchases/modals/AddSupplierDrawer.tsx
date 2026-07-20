@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CheckCircle2 } from 'lucide-react';
+import { useCreateSupplier } from '../../../../hooks/usePurchases';
 
 interface Props {
   open: boolean;
@@ -16,6 +17,7 @@ const categories = ['Electronics', 'Fashion & Apparel', 'Food & Beverages', 'Bea
 
 export default function AddSupplierDrawer({ open, onClose }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const submitting = useRef(false);
   const [done, setDone] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
@@ -28,6 +30,7 @@ export default function AddSupplierDrawer({ open, onClose }: Props) {
     paymentTerm: 'Prepaid',
     notes: '',
   });
+  const { mutate: createSupplier, isPending } = useCreateSupplier();
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -57,7 +60,12 @@ export default function AddSupplierDrawer({ open, onClose }: Props) {
     if (!form.phone.trim()) errs.phone = 'Phone number is required';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    setDone(true);
+    if (submitting.current) return;
+    submitting.current = true;
+    createSupplier(
+      { name: form.name, email: form.email || undefined, phone: form.phone || undefined },
+      { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } }
+    );
   };
 
   return createPortal(
@@ -177,8 +185,9 @@ export default function AddSupplierDrawer({ open, onClose }: Props) {
                   <button onClick={handleClose} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleSubmit} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-                    Save Supplier
+                  <button onClick={handleSubmit} disabled={isPending} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                    {isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {isPending ? 'Saving…' : 'Save Supplier'}
                   </button>
                 </div>
               )}

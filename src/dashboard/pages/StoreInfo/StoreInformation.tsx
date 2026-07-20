@@ -1,3 +1,8 @@
+import { useEffect, useState } from 'react';
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { useDebounce } from '../../../hooks/useDebounce';
+import { api } from '../../../lib/api';
+
 const nigerianStates = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
   'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo',
@@ -19,12 +24,39 @@ export interface StoreInfoForm {
 interface Props {
   form: StoreInfoForm;
   onChange: (form: StoreInfoForm) => void;
+  originalSlug?: string;
 }
 
-export default function StoreInformation({ form, onChange }: Props) {
+function sanitiseSlug(val: string) {
+  return val.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-');
+}
+
+export default function StoreInformation({ form, onChange, originalSlug }: Props) {
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle');
+  const debouncedSlug = useDebounce(form.url, 500);
+
+  useEffect(() => {
+    const slug = debouncedSlug.replace(/^-|-$/g, '');
+    if (!slug || slug === originalSlug || slug.length < 3) { setSlugStatus('idle'); return; }
+    setSlugStatus('checking');
+    api.get('/store/slug-check', { params: { slug } })
+      .then(r => setSlugStatus(r.data.available ? 'available' : 'taken'))
+      .catch(() => setSlugStatus('error'));
+  }, [debouncedSlug, originalSlug]);
+
   const set = (k: keyof StoreInfoForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      onChange({ ...form, [k]: e.target.value });
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const val = k === 'url' ? sanitiseSlug(e.target.value) : e.target.value;
+      onChange({ ...form, [k]: val });
+    };
+
+  const slugIndicator = () => {
+    if (form.url === originalSlug || form.url.length < 3) return null;
+    if (slugStatus === 'checking') return <Loader2 size={13} className="text-slate-400 animate-spin" />;
+    if (slugStatus === 'available') return <CheckCircle2 size={13} className="text-emerald-500" />;
+    if (slugStatus === 'taken') return <XCircle size={13} className="text-red-400" />;
+    return null;
+  };
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-6">
@@ -43,22 +75,31 @@ export default function StoreInformation({ form, onChange }: Props) {
         {/* Store URL */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-semibold text-slate-500">Store URL</label>
-          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:border-[var(--color-brand-blue)] transition-colors">
+          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:border-slate-400 transition-colors">
             <span className="px-3 py-3 text-[12px] text-slate-400 bg-slate-50 border-r border-slate-200 shrink-0">
               nemvol.com/
             </span>
             <input
               value={form.url}
               onChange={set('url')}
-              className="flex-1 px-3 py-3 text-[13px] text-slate-800 outline-none bg-white"
+              placeholder="your-store"
+              className="flex-1 px-3 py-3 text-[13px] text-slate-800 outline-none bg-white min-w-0"
             />
+            <div className="px-3 shrink-0">{slugIndicator()}</div>
           </div>
+          {slugStatus === 'taken' && (
+            <p className="text-[11px] text-red-400">This URL is already taken</p>
+          )}
+          {slugStatus === 'available' && (
+            <p className="text-[11px] text-emerald-500">This URL is available</p>
+          )}
+          <p className="text-[11px] text-slate-400">Only lowercase letters, numbers, and hyphens</p>
         </div>
 
         {/* Phone */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-semibold text-slate-500">Phone Number</label>
-          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:border-[var(--color-brand-blue)] transition-colors">
+          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:border-slate-400 transition-colors">
             <span className="px-3 py-3 text-[12px] text-slate-400 bg-slate-50 border-r border-slate-200 shrink-0">+234</span>
             <input value={form.phone} onChange={set('phone')} className="flex-1 px-3 py-3 text-[13px] text-slate-800 outline-none bg-white" />
           </div>
@@ -67,7 +108,7 @@ export default function StoreInformation({ form, onChange }: Props) {
         {/* WhatsApp */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-semibold text-slate-500">WhatsApp Number</label>
-          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:border-[var(--color-brand-blue)] transition-colors">
+          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:border-slate-400 transition-colors">
             <span className="px-3 py-3 text-[12px] text-slate-400 bg-slate-50 border-r border-slate-200 shrink-0">+234</span>
             <input value={form.whatsapp} onChange={set('whatsapp')} className="flex-1 px-3 py-3 text-[13px] text-slate-800 outline-none bg-white" />
           </div>

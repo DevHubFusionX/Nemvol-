@@ -6,6 +6,8 @@ type StatusFilter = 'all' | 'pending' | 'completed';
 interface PurchasesToolbarProps {
   filter: StatusFilter;
   onFilter: (f: StatusFilter) => void;
+  search: string;
+  onSearch: (v: string) => void;
 }
 
 const filters: { id: StatusFilter; label: string }[] = [
@@ -14,7 +16,7 @@ const filters: { id: StatusFilter; label: string }[] = [
   { id: 'completed', label: 'Completed' },
 ];
 
-export default function PurchasesToolbar({ filter, onFilter }: PurchasesToolbarProps) {
+export default function PurchasesToolbar({ filter, onFilter, search, onSearch }: PurchasesToolbarProps) {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [date, setDate] = useState('');
 
@@ -43,7 +45,9 @@ export default function PurchasesToolbar({ filter, onFilter }: PurchasesToolbarP
         <Search size={13} className="text-slate-400 shrink-0" strokeWidth={1.8} />
         <input
           type="text"
-          placeholder="Search purchase..."
+          value={search}
+          onChange={e => onSearch(e.target.value)}
+          placeholder="Search by supplier or purchase ID..."
           className="flex-1 bg-transparent text-[13px] text-slate-700 placeholder:text-slate-400 outline-none min-w-0"
         />
       </div>

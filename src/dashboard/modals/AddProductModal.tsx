@@ -7,6 +7,7 @@ import StepProductInfo from './StepProductInfo';
 import StepMedia from './StepMedia';
 import StepPricing from './StepPricing';
 import StepSpecs from './StepSpecs';
+import { useCreateProduct, uploadProductImages } from '../../hooks/useProducts';
 
 interface Props {
   open: boolean;
@@ -32,6 +33,8 @@ export default function AddProductModal({ open, onClose }: Props) {
   const [infoErrors, setInfoErrors] = useState<Partial<Record<'category' | 'name', string>>>({});
   const [pricingErrors, setPricingErrors] = useState<Partial<Record<'price' | 'stock', string>>>({});
   const [done, setDone] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const { mutate: createProduct, isPending } = useCreateProduct();
 
   const reset = () => {
     setStep(1); setInfo(defaultInfo); setImages([]); setPricing(defaultPricing);
@@ -54,6 +57,28 @@ export default function AddProductModal({ open, onClose }: Props) {
     if (!pricing.stock) errs.stock = 'Stock quantity is required!';
     setPricingErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (isPending || uploading) return;
+    setUploading(true);
+    let mediaUrls: string[] = [];
+    try {
+      if (images.length > 0) mediaUrls = await uploadProductImages(images);
+    } catch {
+      setUploading(false);
+      return;
+    }
+    setUploading(false);
+    createProduct({
+      name: info.name,
+      slug: info.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+      description: info.description,
+      categoryId: info.category || undefined,
+      status: 'active',
+      variants: [{ price: pricing.price, compareAtPrice: pricing.compareAt || undefined, sku: specs.sku || undefined }],
+      mediaUrls,
+    }, { onSuccess: () => setDone(true) });
   };
 
   return createPortal(
@@ -85,7 +110,7 @@ export default function AddProductModal({ open, onClose }: Props) {
           </motion.div>
         ) : (
           <motion.div key="s4" variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.2 }}>
-            <StepSpecs data={specs} onChange={(d) => setSpecs((p) => ({ ...p, ...d }))} onBack={() => setStep(3)} onSubmit={() => setDone(true)} />
+            <StepSpecs data={specs} onChange={(d) => setSpecs((p) => ({ ...p, ...d }))} onBack={() => setStep(3)} onSubmit={handleSubmit} isPending={isPending || uploading} uploadingImages={uploading} />
           </motion.div>
         )}
       </AnimatePresence>

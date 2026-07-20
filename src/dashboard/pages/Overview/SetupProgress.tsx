@@ -1,23 +1,28 @@
 import { CheckCircle2, Circle } from 'lucide-react';
-
-const steps = [
-  { label: 'Add your first product', done: false },
-  { label: 'Setup payment methods', done: false },
-  { label: 'Customise your store', done: true },
-  { label: 'Launch your storefront', done: true },
-  { label: 'Connect custom domain', done: false },
-];
-
-const completed = steps.filter((s) => s.done).length;
-const total = steps.length;
-const pct = Math.round((completed / total) * 100);
-
-// SVG circle params
-const r = 40;
-const circ = 2 * Math.PI * r;
-const dash = (pct / 100) * circ;
+import { useProducts } from '../../../hooks/useProducts';
+import { useShippingZones } from '../../../hooks/useStorefront';
+import { useStore } from '../../../hooks/useStore';
 
 export default function SetupProgress() {
+  const { data: productsData } = useProducts()
+  const { data: zones } = useShippingZones()
+  const { data: store } = useStore()
+
+  const steps = [
+    { label: 'Add your first product',  done: (productsData?.total ?? 0) > 0 },
+    { label: 'Setup shipping zones',    done: (zones?.length ?? 0) > 0 },
+    { label: 'Customise your store',    done: !!store?.theme },
+    { label: 'Launch your storefront',  done: store?.published === 'true' },
+    { label: 'Connect custom domain',   done: false },
+  ]
+
+  const completed = steps.filter(s => s.done).length
+  const total = steps.length
+  const pct = Math.round((completed / total) * 100)
+  const r = 40
+  const circ = 2 * Math.PI * r
+  const dash = (pct / 100) * circ
+
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-6 flex flex-col gap-6">
       {/* Circular progress */}

@@ -1,8 +1,10 @@
-import { useState } from 'react';
 import { Truck } from 'lucide-react';
+import { useShippingSettings, useSaveShippingSettings } from '../../../hooks/useShipping';
 
 export default function MasterControl() {
-  const [enabled, setEnabled] = useState(false);
+  const { data: settings } = useShippingSettings();
+  const save = useSaveShippingSettings();
+  const enabled = settings?.shippingEnabled ?? false;
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-5 flex items-center gap-4">
@@ -20,8 +22,9 @@ export default function MasterControl() {
           {enabled ? 'Enabled' : 'Disabled'}
         </span>
         <button
-          onClick={() => setEnabled(v => !v)}
-          className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${enabled ? 'bg-slate-900' : 'bg-slate-200'}`}
+          onClick={() => save.mutate({ shippingEnabled: !enabled })}
+          disabled={save.isPending}
+          className={`relative w-10 h-5 rounded-full transition-colors duration-200 disabled:opacity-50 ${enabled ? 'bg-slate-900' : 'bg-slate-200'}`}
         >
           <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>

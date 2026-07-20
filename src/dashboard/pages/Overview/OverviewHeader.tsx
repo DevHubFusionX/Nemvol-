@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { Plus, ArrowUpRight } from 'lucide-react';
 import { useAddProduct } from '../../modals/AddProductContext';
 import InventoryTransferModal from './modals/InventoryTransferModal';
+import { useProfile } from '../../../hooks/useProfile';
 
-interface OverviewHeaderProps {
-  userName?: string;
-}
-
-export default function OverviewHeader({ userName = 'Franklin' }: OverviewHeaderProps) {
+export default function OverviewHeader() {
   const { openAddProduct } = useAddProduct();
   const [transferOpen, setTransferOpen] = useState(false);
+  const { data: profile } = useProfile();
+  const userName = profile?.firstName || 'there';
 
   return (
     <>

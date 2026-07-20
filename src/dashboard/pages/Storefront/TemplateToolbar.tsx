@@ -1,22 +1,26 @@
-import { Eye, Copy, Settings2, Pencil, Check, ExternalLink } from 'lucide-react';
-import { useState } from 'react';
-import MiniEditor from './MiniEditor';
-
-const STORE_URL = 'https://yourstore.nemvol.com';
+import { Eye, Copy, Settings2, Check, ExternalLink } from 'lucide-react'
+import { useState } from 'react'
+import { useStorefrontConfig } from '../../../hooks/useStorefront'
+import { getTemplateCount } from '../../../storefront/templates/registry'
+import { getStorefrontUrl } from '../../../storefront/lib/storeUrl'
 
 interface TemplateToolbarProps {
-  onMoreConfig: () => void;
+  onMoreConfig: () => void
 }
 
 export default function TemplateToolbar({ onMoreConfig }: TemplateToolbarProps) {
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false)
+  const { data: config } = useStorefrontConfig()
+
+  const storeUrl = config?.slug
+    ? getStorefrontUrl(config.slug)
+    : getStorefrontUrl('yourstore')
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(STORE_URL);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    navigator.clipboard.writeText(storeUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <>
@@ -24,14 +28,13 @@ export default function TemplateToolbar({ onMoreConfig }: TemplateToolbarProps) 
         <div>
           <p className="text-[14px] font-semibold text-slate-900">Storefront Template</p>
           <p className="text-[12px] text-slate-400 mt-0.5">
-            Select a premium storefront template for your brand
+            {getTemplateCount()} premium storefront templates available for your brand
           </p>
         </div>
 
-        {/* Action buttons — scroll horizontally on mobile */}
         <div className="flex items-center gap-2 overflow-x-auto pb-0.5 sm:pb-0" style={{ scrollbarWidth: 'none' }}>
           <a
-            href={STORE_URL}
+            href={storeUrl}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors shrink-0"
@@ -58,22 +61,9 @@ export default function TemplateToolbar({ onMoreConfig }: TemplateToolbarProps) 
             <span className="sm:hidden">Config</span>
           </button>
 
-          <button
-            onClick={() => setEditorOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[12px] font-medium hover:bg-slate-700 transition-colors shrink-0"
-          >
-            <Pencil size={13} strokeWidth={1.8} />
-            <span className="hidden sm:inline">Mini Editor</span>
-            <span className="sm:hidden">Editor</span>
-          </button>
+
         </div>
       </div>
-
-      <MiniEditor
-        open={editorOpen}
-        onClose={() => setEditorOpen(false)}
-        onSave={() => {}}
-      />
     </>
-  );
+  )
 }

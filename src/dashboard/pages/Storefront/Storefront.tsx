@@ -1,6 +1,6 @@
-import StorefrontHeader from './StorefrontHeader';
-import TemplateToolbar from './TemplateToolbar';
-import ThemeGrid from './ThemeGrid';
+import StorefrontHeader from './StorefrontHeader'
+import TemplateToolbar from './TemplateToolbar'
+import ThemeGrid from './ThemeGrid'
 
 export default function Storefront() {
   return (
@@ -9,5 +9,5 @@ export default function Storefront() {
       <TemplateToolbar onMoreConfig={() => window.open('/dashboard/store-info', '_self')} />
       <ThemeGrid />
     </div>
-  );
+  )
 }

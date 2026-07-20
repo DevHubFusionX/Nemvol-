@@ -1,4 +1,5 @@
-import type { TrackerConfig } from './modals/EditTrackerDrawer';
+import { useToolsConfig } from '../../../hooks/useTools'
+import type { TrackerConfig } from './modals/EditTrackerDrawer'
 
 export const trackers: TrackerConfig[] = [
   {
@@ -25,15 +26,16 @@ export const trackers: TrackerConfig[] = [
     color: 'bg-red-400',
     description: 'Understand your traffic, user behaviour, and conversion funnels in detail.',
   },
-];
+]
 
 interface Props {
-  trackerValues: Record<string, string>;
-  onEdit: (tracker: TrackerConfig) => void;
+  onEdit: (tracker: TrackerConfig) => void
 }
 
-export default function MarketingTracking({ trackerValues, onEdit }: Props) {
-  const connectedCount = trackers.filter(t => trackerValues[t.id]?.trim()).length;
+export default function MarketingTracking({ onEdit }: Props) {
+  const { data: config } = useToolsConfig()
+  const trackerValues = config?.trackers ?? {}
+  const connectedCount = trackers.filter(t => trackerValues[t.id]?.trim()).length
 
   return (
     <div>
@@ -53,7 +55,7 @@ export default function MarketingTracking({ trackerValues, onEdit }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {trackers.map(tracker => {
-          const isConnected = !!trackerValues[tracker.id]?.trim();
+          const isConnected = !!trackerValues[tracker.id]?.trim()
           return (
             <div key={tracker.id} className="bg-white rounded-xl border border-slate-100 p-5 flex flex-col gap-4">
               <div className="flex items-center justify-between">
@@ -71,9 +73,7 @@ export default function MarketingTracking({ trackerValues, onEdit }: Props) {
                 </span>
               </div>
 
-              <p className="text-[11px] text-slate-400 leading-relaxed flex-1">
-                {tracker.description}
-              </p>
+              <p className="text-[11px] text-slate-400 leading-relaxed flex-1">{tracker.description}</p>
 
               {isConnected && (
                 <p className="text-[11px] font-mono text-slate-500 bg-slate-50 px-3 py-2 rounded-lg truncate">
@@ -88,9 +88,9 @@ export default function MarketingTracking({ trackerValues, onEdit }: Props) {
                 {isConnected ? 'Update' : 'Connect'}
               </button>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

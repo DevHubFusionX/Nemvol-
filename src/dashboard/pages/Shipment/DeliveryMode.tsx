@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Zap } from 'lucide-react';
+import { useShippingSettings, useSaveShippingSettings } from '../../../hooks/useShipping';
 
 const modes = [
   { id: 'manual', label: 'Manual Rates', desc: 'Set your own flat fees per zone or state.' },
@@ -7,7 +7,9 @@ const modes = [
 ];
 
 export default function DeliveryMode() {
-  const [selected, setSelected] = useState('manual');
+  const { data: settings } = useShippingSettings();
+  const save = useSaveShippingSettings();
+  const selected = settings?.deliveryMode ?? 'manual';
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-5">
@@ -19,11 +21,10 @@ export default function DeliveryMode() {
         {modes.map(({ id, label, desc }) => (
           <button
             key={id}
-            onClick={() => setSelected(id)}
-            className={`text-left p-4 rounded-xl border-2 transition-all ${
-              selected === id
-                ? 'border-slate-900 bg-slate-50'
-                : 'border-slate-100 hover:border-slate-200'
+            onClick={() => save.mutate({ deliveryMode: id })}
+            disabled={save.isPending}
+            className={`text-left p-4 rounded-xl border-2 transition-all disabled:opacity-60 ${
+              selected === id ? 'border-slate-900 bg-slate-50' : 'border-slate-100 hover:border-slate-200'
             }`}
           >
             <p className="text-[13px] font-bold text-slate-900">{label}</p>

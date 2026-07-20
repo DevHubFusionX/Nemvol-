@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { X, CheckCircle2 } from 'lucide-react';
 import SimpleModal from './SimpleModal';
+import { useCreateAttribute } from '../../../../hooks/useAttributes';
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -19,6 +20,8 @@ export default function AddAttributeModal({ open, onClose }: Props) {
   const [valueInput, setValueInput] = useState('');
   const [errors, setErrors] = useState<Partial<Record<'name' | 'values', string>>>({});
   const [done, setDone] = useState(false);
+  const createAttribute = useCreateAttribute();
+  const submitting = useRef(false);
 
   const addValue = () => {
     const v = valueInput.trim();
@@ -32,7 +35,13 @@ export default function AddAttributeModal({ open, onClose }: Props) {
     if (!name.trim()) errs.name = 'Attribute name is required';
     if (values.length === 0) errs.values = 'Add at least one value';
     setErrors(errs);
-    if (Object.keys(errs).length === 0) setDone(true);
+    if (Object.keys(errs).length > 0) return;
+    if (submitting.current) return;
+    submitting.current = true;
+    createAttribute.mutate({ name: name.trim(), type, values }, {
+      onSuccess: () => setDone(true),
+      onSettled: () => { submitting.current = false; },
+    });
   };
 
   const handleClose = () => {
@@ -116,8 +125,9 @@ export default function AddAttributeModal({ open, onClose }: Props) {
             )}
           </div>
 
-          <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-            Save Attribute
+          <button onClick={handleSave} disabled={createAttribute.isPending} className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {createAttribute.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            {createAttribute.isPending ? 'Saving…' : 'Save Attribute'}
           </button>
         </div>
       )}

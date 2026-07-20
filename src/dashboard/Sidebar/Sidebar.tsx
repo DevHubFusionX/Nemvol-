@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, Store, Package, ShoppingCart, ClipboardList,
   Star, Users, Banknote, FileText, FileStack, Globe, MapPin,
-  Truck, Info, UserCog, CreditCard, Wrench, ArrowUpRight, X,
+  Truck, Info, UserCog, CreditCard, Wrench, ArrowUpRight, X, Paintbrush,
 } from 'lucide-react';
 
 const groups = [
@@ -13,6 +13,7 @@ const groups = [
     items: [
       { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
       { label: 'Storefront', icon: Store, to: '/dashboard/storefront' },
+      { label: 'Theme Builder', icon: Paintbrush, to: '/dashboard/theme-builder' },
     ],
   },
   {

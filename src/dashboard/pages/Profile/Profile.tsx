@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Upload, X, Check, Eye, EyeOff, LogOut, User, Lock, ImageIcon } from 'lucide-react';
+import { Upload, X, Check, Eye, EyeOff, LogOut, User, Lock, ImageIcon, Loader2 } from 'lucide-react';
+import { useProfile, useUpdateProfile, useUploadAvatar, useChangePassword } from '../../../hooks/useProfile';
 
 const inputCls =
   'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[13px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-slate-400 transition-colors bg-white';
@@ -14,15 +15,13 @@ const navItems: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: 'password', label: 'Password', icon: Lock },
 ];
 
-function SaveRow({ saved, label, onSave }: { saved: boolean; label: string; onSave: () => void }) {
+function SaveRow({ saved, label, onSave, isPending }: { saved: boolean; label: string; onSave: () => void; isPending?: boolean }) {
   return (
     <div className="flex items-center gap-3 pt-2">
       <AnimatePresence>
         {saved && (
           <motion.span
-            initial={{ opacity: 0, x: 6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
             className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-600"
           >
             <Check size={13} strokeWidth={2.5} /> Saved
@@ -31,9 +30,10 @@ function SaveRow({ saved, label, onSave }: { saved: boolean; label: string; onSa
       </AnimatePresence>
       <button
         onClick={onSave}
-        className="px-5 py-2 rounded-lg bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors"
+        disabled={isPending}
+        className="px-5 py-2 rounded-lg bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-60"
       >
-        {label}
+        {isPending ? 'Saving…' : label}
       </button>
     </div>
   );
@@ -44,16 +44,29 @@ export default function Profile() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [active, setActive] = useState<Section>('photo');
 
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const { data: profile, isLoading } = useProfile();
+  const updateProfile = useUpdateProfile();
+  const uploadAvatar = useUploadAvatar();
+  const changePassword = useChangePassword();
+
+  const [info, setInfo] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [infoSaved, setInfoSaved] = useState(false);
+  const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
   const [pwSaved, setPwSaved] = useState(false);
+  const [pwError, setPwError] = useState('');
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [pwError, setPwError] = useState('');
 
-  const [info, setInfo] = useState({ firstName: '', lastName: '', email: '', phone: '' });
-  const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
+  useEffect(() => {
+    if (!profile) return;
+    setInfo({
+      firstName: profile.firstName ?? '',
+      lastName:  profile.lastName ?? '',
+      email:     profile.email ?? '',
+      phone:     profile.phone ?? '',
+    });
+  }, [profile]);
 
   const setInfoField = (k: keyof typeof info) =>
     (e: React.ChangeEvent<HTMLInputElement>) => setInfo(p => ({ ...p, [k]: e.target.value }));
@@ -64,14 +77,14 @@ export default function Profile() {
   const handleAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setAvatarUrl(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    uploadAvatar.mutate(file);
   };
 
   const handleSaveInfo = () => {
-    setInfoSaved(true);
-    setTimeout(() => setInfoSaved(false), 3000);
+    updateProfile.mutate(
+      { firstName: info.firstName, lastName: info.lastName, phone: info.phone },
+      { onSuccess: () => { setInfoSaved(true); setTimeout(() => setInfoSaved(false), 3000); } }
+    );
   };
 
   const handleSavePw = () => {
@@ -79,17 +92,31 @@ export default function Profile() {
     if (pw.next.length < 8) { setPwError('New password must be at least 8 characters'); return; }
     if (pw.next !== pw.confirm) { setPwError('Passwords do not match'); return; }
     setPwError('');
-    setPw({ current: '', next: '', confirm: '' });
-    setPwSaved(true);
-    setTimeout(() => setPwSaved(false), 3000);
+    changePassword.mutate(
+      { currentPassword: pw.current, newPassword: pw.next },
+      {
+        onSuccess: () => {
+          setPw({ current: '', next: '', confirm: '' });
+          setPwSaved(true);
+          setTimeout(() => setPwSaved(false), 3000);
+        },
+        onError: () => setPwError('Current password is incorrect'),
+      }
+    );
   };
 
+  const avatarUrl = profile?.avatarUrl ?? null;
   const initials = [info.firstName, info.lastName]
     .filter(Boolean).map(n => n[0].toUpperCase()).join('') || 'ME';
 
+  if (isLoading) return (
+    <div className="flex items-center justify-center py-32">
+      <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+    </div>
+  );
+
   return (
     <div className="space-y-5">
-      {/* Page header */}
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Account</p>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Your Profile</h1>
@@ -98,7 +125,6 @@ export default function Profile() {
 
       <div className="flex flex-col lg:flex-row gap-5 items-start">
 
-        {/* ── Left nav ── */}
         {/* Mobile: horizontal pill row */}
         <div className="lg:hidden flex gap-1 p-1 bg-white border border-slate-100 rounded-xl overflow-x-auto w-full" style={{ scrollbarWidth: 'none' }}>
           {navItems.map(({ id, label, icon: Icon }) => (
@@ -122,17 +148,13 @@ export default function Profile() {
               key={id}
               onClick={() => setActive(id)}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors text-left ${
-                active === id
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white'
+                active === id ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800 hover:bg-white'
               }`}
             >
               <Icon size={15} strokeWidth={1.8} />
               {label}
             </button>
           ))}
-
-          {/* Sign out in nav on desktop */}
           <div className="mt-4 pt-4 border-t border-slate-200">
             <button
               onClick={() => navigate('/login')}
@@ -144,7 +166,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ── Right content ── */}
+        {/* Right content */}
         <div className="flex-1 min-w-0 space-y-5">
           <AnimatePresence mode="wait">
 
@@ -152,9 +174,7 @@ export default function Profile() {
             {active === 'photo' && (
               <motion.div
                 key="photo"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.18 }}
                 className="bg-white rounded-xl border border-slate-100 p-6 space-y-5"
               >
@@ -162,26 +182,29 @@ export default function Profile() {
                   <p className="text-[14px] font-bold text-slate-900">Profile Photo</p>
                   <p className="text-[12px] text-slate-400 mt-0.5">This appears on your account and in staff management.</p>
                 </div>
-
                 <div className="flex items-center gap-6">
                   <div className="w-24 h-24 rounded-full bg-slate-900 flex items-center justify-center shrink-0 overflow-hidden">
-                    {avatarUrl
-                      ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                      : <span className="text-white text-[22px] font-bold">{initials}</span>
-                    }
+                    {uploadAvatar.isPending ? (
+                      <Loader2 size={24} className="text-white animate-spin" />
+                    ) : avatarUrl ? (
+                      <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white text-[22px] font-bold">{initials}</span>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => fileRef.current?.click()}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                        disabled={uploadAvatar.isPending}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
                       >
                         <Upload size={12} strokeWidth={1.8} />
                         {avatarUrl ? 'Change Photo' : 'Upload Photo'}
                       </button>
-                      {avatarUrl && (
+                      {avatarUrl && !uploadAvatar.isPending && (
                         <button
-                          onClick={() => { setAvatarUrl(null); if (fileRef.current) fileRef.current.value = ''; }}
+                          onClick={() => updateProfile.mutate({ firstName: info.firstName, lastName: info.lastName, phone: info.phone })}
                           className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                         >
                           <X size={13} strokeWidth={2} />
@@ -199,17 +222,14 @@ export default function Profile() {
             {active === 'info' && (
               <motion.div
                 key="info"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.18 }}
                 className="bg-white rounded-xl border border-slate-100 p-6 space-y-5"
               >
                 <div>
                   <p className="text-[14px] font-bold text-slate-900">Personal Information</p>
-                  <p className="text-[12px] text-slate-400 mt-0.5">Update your name, email and contact details.</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">Update your name and contact details.</p>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold text-slate-500">First Name</label>
@@ -221,15 +241,20 @@ export default function Profile() {
                   </div>
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <label className="text-[11px] font-semibold text-slate-500">Email Address</label>
-                    <input type="email" value={info.email} onChange={setInfoField('email')} placeholder="you@example.com" className={inputCls} />
+                    <input
+                      type="email"
+                      value={info.email}
+                      disabled
+                      className={`${inputCls} opacity-50 cursor-not-allowed`}
+                    />
+                    <p className="text-[11px] text-slate-400">Email is managed through your Clerk account.</p>
                   </div>
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <label className="text-[11px] font-semibold text-slate-500">Phone Number</label>
                     <input type="tel" value={info.phone} onChange={setInfoField('phone')} placeholder="+234 800 000 0000" className={inputCls} />
                   </div>
                 </div>
-
-                <SaveRow saved={infoSaved} label="Save Changes" onSave={handleSaveInfo} />
+                <SaveRow saved={infoSaved} label="Save Changes" onSave={handleSaveInfo} isPending={updateProfile.isPending} />
               </motion.div>
             )}
 
@@ -237,9 +262,7 @@ export default function Profile() {
             {active === 'password' && (
               <motion.div
                 key="password"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.18 }}
                 className="bg-white rounded-xl border border-slate-100 p-6 space-y-5"
               >
@@ -247,11 +270,10 @@ export default function Profile() {
                   <p className="text-[14px] font-bold text-slate-900">Change Password</p>
                   <p className="text-[12px] text-slate-400 mt-0.5">Use a strong password you don't use elsewhere.</p>
                 </div>
-
                 <div className="space-y-3">
                   {([
                     { key: 'current', label: 'Current Password', show: showCurrent, toggle: () => setShowCurrent(v => !v), placeholder: '••••••••' },
-                    { key: 'next', label: 'New Password', show: showNew, toggle: () => setShowNew(v => !v), placeholder: 'Min. 8 characters' },
+                    { key: 'next',    label: 'New Password',     show: showNew,     toggle: () => setShowNew(v => !v),     placeholder: 'Min. 8 characters' },
                     { key: 'confirm', label: 'Confirm New Password', show: showConfirm, toggle: () => setShowConfirm(v => !v), placeholder: 'Repeat new password' },
                   ] as const).map(({ key, label, show, toggle, placeholder }) => (
                     <div key={key} className="flex flex-col gap-1.5">
@@ -264,10 +286,7 @@ export default function Profile() {
                           placeholder={placeholder}
                           className={`${inputCls} pr-10`}
                         />
-                        <button
-                          onClick={toggle}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
+                        <button onClick={toggle} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
                           {show ? <EyeOff size={14} strokeWidth={1.8} /> : <Eye size={14} strokeWidth={1.8} />}
                         </button>
                       </div>
@@ -275,14 +294,13 @@ export default function Profile() {
                   ))}
                   {pwError && <p className="text-[11px] text-red-500">• {pwError}</p>}
                 </div>
-
-                <SaveRow saved={pwSaved} label="Update Password" onSave={handleSavePw} />
+                <SaveRow saved={pwSaved} label="Update Password" onSave={handleSavePw} isPending={changePassword.isPending} />
               </motion.div>
             )}
 
           </AnimatePresence>
 
-          {/* Sign out — mobile only (desktop is in left nav) */}
+          {/* Sign out — mobile only */}
           <div className="lg:hidden bg-white rounded-xl border border-slate-100 p-5 flex items-center justify-between gap-4">
             <div>
               <p className="text-[14px] font-bold text-slate-900">Sign Out</p>

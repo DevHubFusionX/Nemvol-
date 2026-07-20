@@ -6,9 +6,11 @@ interface StepSpecsProps {
   onChange: (data: Partial<StepSpecsProps['data']>) => void;
   onBack: () => void;
   onSubmit: () => void;
+  isPending?: boolean;
+  uploadingImages?: boolean;
 }
 
-export default function StepSpecs({ data, onChange, onBack, onSubmit }: StepSpecsProps) {
+export default function StepSpecs({ data, onChange, onBack, onSubmit, isPending, uploadingImages }: StepSpecsProps) {
   const [variantInput, setVariantInput] = useState('');
 
   const addVariant = () => {
@@ -97,9 +99,11 @@ export default function StepSpecs({ data, onChange, onBack, onSubmit }: StepSpec
         </button>
         <button
           onClick={onSubmit}
-          className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors"
+          disabled={isPending}
+          className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          Save Product
+          {isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+          {uploadingImages ? 'Uploading images...' : isPending ? 'Saving...' : 'Save Product'}
         </button>
       </div>
     </div>

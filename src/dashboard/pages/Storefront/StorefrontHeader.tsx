@@ -1,10 +1,18 @@
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
-import LaunchStorefrontModal from './modals/LaunchStorefrontModal';
+import { useState } from 'react'
+import { Plus } from 'lucide-react'
+import LaunchStorefrontModal from './modals/LaunchStorefrontModal'
+import { useStorefrontConfig, useUpdateStorefrontConfig } from '../../../hooks/useStorefront'
 
 export default function StorefrontHeader() {
-  const [live, setLive] = useState(false);
-  const [launchOpen, setLaunchOpen] = useState(false);
+  const [launchOpen, setLaunchOpen] = useState(false)
+  const { data: config } = useStorefrontConfig()
+  const update = useUpdateStorefrontConfig()
+
+  const isLive = config?.published === 'true'
+
+  const toggleLive = () => {
+    update.mutate({ published: isLive ? 'false' : 'true' })
+  }
 
   return (
     <>
@@ -20,18 +28,15 @@ export default function StorefrontHeader() {
           <div className="flex items-center gap-2">
             <span className="text-[13px] text-slate-500">Make it Live</span>
             <button
-              onClick={() => setLive((v) => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                live ? 'bg-emerald-500' : 'bg-slate-200'
+              onClick={toggleLive}
+              disabled={update.isPending}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 disabled:opacity-60 ${
+                isLive ? 'bg-emerald-500' : 'bg-slate-200'
               }`}
             >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                  live ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${isLive ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
-            {live && (
+            {isLive && (
               <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                 Live
@@ -53,8 +58,8 @@ export default function StorefrontHeader() {
       <LaunchStorefrontModal
         open={launchOpen}
         onClose={() => setLaunchOpen(false)}
-        onPublished={() => setLive(true)}
+        onPublished={() => setLaunchOpen(false)}
       />
     </>
-  );
+  )
 }

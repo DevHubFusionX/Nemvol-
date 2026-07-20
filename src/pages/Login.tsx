@@ -1,25 +1,61 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { useClerk, useAuth } from '@clerk/react';
 
 export default function Login() {
+  const { client, setActive } = useClerk();
+  const { isLoaded, isSignedIn } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => e.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isLoaded) return;
+    setLoading(true);
+    setError('');
+    try {
+      const result = await client.signIn.create({
+        identifier: form.email,
+        password: form.password,
+      });
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.errors?.[0]?.longMessage ?? 'Invalid email or password.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogle() {
+    if (!isLoaded) return;
+    await client.signIn.authenticateWithRedirect({
+      strategy: 'oauth_google',
+      redirectUrl: `${window.location.origin}/login/sso-callback`,
+      redirectUrlComplete: '/dashboard',
+    });
+  }
+
+  if (isLoaded && isSignedIn) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
 
       {/* ── Left: Brand panel ── */}
       <div className="hidden lg:flex flex-col justify-between bg-slate-900 px-14 py-14">
-        {/* Logo */}
         <Link to="/" className="text-[17px] font-extrabold text-white tracking-tight">
           Nemvol
         </Link>
 
-        {/* Centre quote */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -33,7 +69,6 @@ export default function Login() {
           </p>
         </motion.div>
 
-        {/* Bottom wordmark */}
         <div className="overflow-hidden select-none">
           <p
             className="font-extrabold tracking-tighter leading-none bg-linear-to-r from-[#0369a1] via-[#7dd3fc] to-[#0369a1] bg-clip-text text-transparent"
@@ -47,7 +82,6 @@ export default function Login() {
       {/* ── Right: Form panel ── */}
       <div className="flex flex-col justify-center px-6 py-14 sm:px-12 lg:px-20 bg-white">
 
-        {/* Mobile logo */}
         <Link to="/" className="lg:hidden text-[17px] font-extrabold text-slate-900 tracking-tight mb-12">
           Nemvol
         </Link>
@@ -58,7 +92,6 @@ export default function Login() {
           transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           className="w-full max-w-sm mx-auto"
         >
-          {/* Heading */}
           <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--color-brand-blue)]">
             Welcome back
           </span>
@@ -72,39 +105,27 @@ export default function Login() {
             </Link>
           </p>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-5">
-
-            {/* Email */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-bold text-slate-700">
-                Email address
-              </label>
+              <label className="text-[12px] font-bold text-slate-700">Email address</label>
               <input
-                type="email"
-                required
-                placeholder="you@company.com"
+                type="email" required placeholder="you@company.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className="input-field"
               />
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[12px] font-bold text-slate-700">
-                  Password
-                </label>
+                <label className="text-[12px] font-bold text-slate-700">Password</label>
                 <Link to="/forgot-password" className="text-[12px] font-bold text-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue-hover)] transition-colors">
                   Forgot password?
                 </Link>
               </div>
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  placeholder="••••••••"
+                  type={showPassword ? 'text' : 'password'} required placeholder="••••••••"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="input-field pr-11"
@@ -114,34 +135,30 @@ export default function Login() {
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
                 >
-                  {showPassword
-                    ? <EyeOff className="w-4 h-4" />
-                    : <Eye className="w-4 h-4" />
-                  }
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {/* Submit */}
+            {error && <p className="text-[12px] text-red-500 font-medium -mt-1">{error}</p>}
+
             <button
-              type="submit"
-              className="mt-2 inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 rounded-xl bg-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue-hover)] text-white text-[13px] font-bold transition-all duration-200 active:scale-[0.98] group"
+              type="submit" disabled={loading}
+              className="mt-2 inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 rounded-xl bg-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue-hover)] text-white text-[13px] font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-60 group"
             >
-              Sign in
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              {loading ? 'Signing in…' : 'Sign in'}
+              {!loading && <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />}
             </button>
           </form>
 
-          {/* Divider */}
           <div className="mt-8 flex items-center gap-3">
             <div className="flex-1 h-px bg-slate-100" />
             <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">or</span>
             <div className="flex-1 h-px bg-slate-100" />
           </div>
 
-          {/* Google SSO */}
           <button
-            type="button"
+            type="button" onClick={handleGoogle}
             className="mt-6 w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 text-[13px] font-bold transition-all duration-200 active:scale-[0.98]"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">

@@ -2,18 +2,20 @@ import { Search, CalendarDays } from 'lucide-react';
 
 type Filter = 'all' | 'paid' | 'unpaid';
 
-interface OrdersToolbarProps {
+interface Props {
   filter: Filter;
   onFilter: (f: Filter) => void;
+  search: string;
+  onSearch: (v: string) => void;
 }
 
 const filters: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'All Orders' },
-  { id: 'paid', label: 'Paid' },
-  { id: 'unpaid', label: 'Unpaid' },
+  { id: 'all',    label: 'All Orders' },
+  { id: 'paid',   label: 'Paid'       },
+  { id: 'unpaid', label: 'Unpaid'     },
 ];
 
-export default function OrdersToolbar({ filter, onFilter }: OrdersToolbarProps) {
+export default function OrdersToolbar({ filter, onFilter, search, onSearch }: Props) {
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
       {/* Filter pills */}
@@ -38,12 +40,14 @@ export default function OrdersToolbar({ filter, onFilter }: OrdersToolbarProps) 
         <Search size={13} className="text-slate-400 shrink-0" strokeWidth={1.8} />
         <input
           type="text"
-          placeholder="Search by order ID..."
+          value={search}
+          onChange={e => onSearch(e.target.value)}
+          placeholder="Search by order ID or customer..."
           className="flex-1 bg-transparent text-[13px] text-slate-700 placeholder:text-slate-400 outline-none min-w-0"
         />
       </div>
 
-      {/* Date range */}
+      {/* Date range — placeholder */}
       <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-slate-100 text-[13px] text-slate-500 hover:bg-slate-50 transition-colors shrink-0">
         <CalendarDays size={13} strokeWidth={1.8} />
         Select range

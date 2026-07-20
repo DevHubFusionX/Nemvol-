@@ -1,11 +1,17 @@
 import { ShoppingBag, CheckCircle } from 'lucide-react';
-
-const stats = [
-  { label: 'Total Orders', value: '0', icon: ShoppingBag },
-  { label: 'Completed Orders', value: '0', icon: CheckCircle },
-];
+import { useOrders } from '../../../hooks/useOrders';
 
 export default function OrdersStats() {
+  const { data } = useOrders();
+  const orders = data?.data ?? [];
+  const total = orders.length;
+  const completed = orders.filter(o => o.status === 'delivered').length;
+
+  const stats = [
+    { label: 'Total Orders',     value: total,     icon: ShoppingBag  },
+    { label: 'Completed Orders', value: completed, icon: CheckCircle  },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {stats.map(({ label, value, icon: Icon }) => (
@@ -14,9 +20,7 @@ export default function OrdersStats() {
             <Icon size={18} className="text-slate-400" strokeWidth={1.5} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-              {label}
-            </p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</p>
             <p className="text-2xl font-bold text-slate-900 mt-0.5">{value}</p>
           </div>
         </div>

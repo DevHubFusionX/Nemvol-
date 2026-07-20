@@ -1,12 +1,31 @@
-import { TrendingUp, TrendingDown } from 'lucide-react';
-
-const stats = [
-  { label: 'Total Products Value', value: '₦0', change: '+1.5%', up: true },
-  { label: 'Total Categories', value: '0', change: '+2.3%', up: true },
-  { label: 'Total Products', value: '0', change: '-11.4%', up: false },
-];
+import { TrendingUp } from 'lucide-react';
+import { useCategories } from '../../../hooks/useCategories';
+import { useProducts } from '../../../hooks/useProducts';
 
 export default function ProductsStats() {
+  const { data: productsResponse } = useProducts();
+  const { data: categories = [] } = useCategories();
+
+  const products = productsResponse?.data ?? [];
+  const totalProducts = products.length;
+  const totalValue = products.reduce((sum, product) => {
+    const firstPrice = Number(product.variants?.[0]?.price ?? 0);
+    return sum + (Number.isFinite(firstPrice) ? firstPrice : 0);
+  }, 0);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  const stats = [
+    { label: 'Total Products Value', value: formatCurrency(totalValue), change: 'Updated now', up: true },
+    { label: 'Total Categories', value: String(categories.length), change: 'Live', up: true },
+    { label: 'Total Products', value: String(totalProducts), change: 'Live', up: true },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {stats.map(({ label, value, change, up }) => (
@@ -16,8 +35,8 @@ export default function ProductsStats() {
           </p>
           <p className="text-xl sm:text-2xl font-bold text-slate-900">{value}</p>
           <div className={`flex items-center gap-1 mt-2 text-[11px] font-medium ${up ? 'text-emerald-500' : 'text-red-400'}`}>
-            {up ? <TrendingUp size={12} strokeWidth={2} /> : <TrendingDown size={12} strokeWidth={2} />}
-            {change} vs last month
+            <TrendingUp size={12} strokeWidth={2} />
+            {change}
           </div>
         </div>
       ))}

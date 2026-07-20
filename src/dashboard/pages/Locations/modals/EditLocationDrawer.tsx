@@ -3,13 +3,12 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CheckCircle2, Trash2 } from 'lucide-react';
 import type { Location } from '../LocationsList';
+import { useUpdateLocation, useDeleteLocation } from '../../../../hooks/useLocations';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   location: Location | null;
-  onSave: (updated: Location) => void;
-  onDelete: (id: string) => void;
 }
 
 const inputCls =
@@ -25,8 +24,11 @@ const nigerianStates = [
   'Yobe', 'Zamfara',
 ];
 
-export default function EditLocationDrawer({ open, onClose, location, onSave, onDelete }: Props) {
+export default function EditLocationDrawer({ open, onClose, location }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const submitting = useRef(false);
+  const updateLocation = useUpdateLocation();
+  const deleteLocation = useDeleteLocation();
   const [done, setDone] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -68,11 +70,16 @@ export default function EditLocationDrawer({ open, onClose, location, onSave, on
     if (!form.state) errs.state = 'State is required';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    onSave({ ...form, id: location!.id });
-    setDone(true);
+    if (submitting.current) return;
+    submitting.current = true;
+    updateLocation.mutate({ ...form, id: location!.id }, { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } });
   };
 
-  const handleDelete = () => { onDelete(location!.id); handleClose(); };
+  const handleDelete = () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    deleteLocation.mutate(location!.id, { onSuccess: () => handleClose(), onSettled: () => { submitting.current = false; } });
+  };
 
   if (!location) return null;
 
@@ -212,8 +219,9 @@ export default function EditLocationDrawer({ open, onClose, location, onSave, on
                   <button onClick={() => setConfirmDelete(false)} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleDelete} className="flex-1 py-3 rounded-xl bg-red-500 text-white text-[13px] font-semibold hover:bg-red-600 transition-colors">
-                    Yes, Remove
+                  <button onClick={handleDelete} disabled={deleteLocation.isPending} className="flex-1 py-3 rounded-xl bg-red-500 text-white text-[13px] font-semibold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                    {deleteLocation.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {deleteLocation.isPending ? 'Removing…' : 'Yes, Remove'}
                   </button>
                 </div>
               ) : (
@@ -221,8 +229,9 @@ export default function EditLocationDrawer({ open, onClose, location, onSave, on
                   <button onClick={handleClose} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-                    Save Changes
+                  <button onClick={handleSave} disabled={updateLocation.isPending} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                    {updateLocation.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {updateLocation.isPending ? 'Saving…' : 'Save Changes'}
                   </button>
                 </div>
               )}

@@ -1,58 +1,58 @@
-import { useState } from 'react';
-import PagesHeader from './PagesHeader';
-import PagesStats from './PagesStats';
-import PagesList, { type StorePage } from './PagesList';
-import AddPageDrawer from './modals/AddPageDrawer';
-import EditPageDrawer from './modals/EditPageDrawer';
+import { useState } from 'react'
+import PagesHeader from './PagesHeader'
+import PagesStats from './PagesStats'
+import PagesList from './PagesList'
+import PageEditor from './editor/PageEditor'
+import { usePages, type StorePage } from '../../../hooks/useStorefront'
 
-const defaultPages: StorePage[] = [
-  { label: 'About Us', type: 'System Page', status: 'empty' },
-  { label: 'Refund Policy', type: 'System Page', status: 'empty' },
-  { label: 'Terms & Conditions', type: 'System Page', status: 'empty' },
-  { label: 'Privacy Policy', type: 'System Page', status: 'empty' },
-  { label: 'Contact Us', type: 'System Page', status: 'empty' },
-  { label: 'FAQ', type: 'System Page', status: 'empty' },
-];
+const SYSTEM_PAGES: StorePage[] = [
+  { id: '__about',   title: 'About Us',           slug: 'about',              published: 'false', createdAt: '', isSystem: true },
+  { id: '__refund',  title: 'Refund Policy',       slug: 'refund-policy',      published: 'false', createdAt: '', isSystem: true },
+  { id: '__terms',   title: 'Terms & Conditions',  slug: 'terms',              published: 'false', createdAt: '', isSystem: true },
+  { id: '__privacy', title: 'Privacy Policy',      slug: 'privacy-policy',     published: 'false', createdAt: '', isSystem: true },
+  { id: '__contact', title: 'Contact Us',          slug: 'contact',            published: 'false', createdAt: '', isSystem: true },
+  { id: '__faq',     title: 'FAQ',                 slug: 'faq',                published: 'false', createdAt: '', isSystem: true },
+]
 
 export default function Pages() {
-  const [pages, setPages] = useState<StorePage[]>(defaultPages);
-  const [addOpen, setAddOpen] = useState(false);
-  const [editPage, setEditPage] = useState<StorePage | null>(null);
+  const { data: apiPages = [] } = usePages()
+  const [editorMode, setEditorMode] = useState<'add' | 'edit' | null>(null)
+  const [editPage, setEditPage] = useState<StorePage | null>(null)
 
-  const handleAdd = (page: StorePage) => {
-    setPages(p => [...p, page]);
-  };
+  const allPages: StorePage[] = [
+    ...SYSTEM_PAGES,
+    ...apiPages.map(p => ({ ...p, isSystem: false })),
+  ]
 
-  const handleSave = (updated: StorePage) => {
-    setPages(p => p.map(pg => pg.label === updated.label ? updated : pg));
-  };
+  const total     = allPages.length
+  const published = allPages.filter(p => p.published === 'true').length
+  const drafts    = allPages.filter(p => p.published === 'false').length
 
-  const handleDelete = (label: string) => {
-    setPages(p => p.filter(pg => pg.label !== label));
-  };
+  const handleEdit = (page: StorePage) => {
+    setEditPage(page)
+    setEditorMode('edit')
+  }
 
-  const total = pages.length;
-  const published = pages.filter(p => p.status === 'published').length;
-  const drafts = pages.filter(p => p.status === 'draft').length;
+  const handleClose = () => {
+    setEditorMode(null)
+    setEditPage(null)
+  }
+
+  if (editorMode) {
+    return (
+      <PageEditor
+        mode={editorMode}
+        page={editPage}
+        onClose={handleClose}
+      />
+    )
+  }
 
   return (
     <div className="space-y-5">
-      <PagesHeader onAdd={() => setAddOpen(true)} />
+      <PagesHeader onAdd={() => setEditorMode('add')} />
       <PagesStats total={total} published={published} drafts={drafts} />
-      <PagesList pages={pages} onEdit={setEditPage} />
-
-      <AddPageDrawer
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onAdd={handleAdd}
-      />
-      <EditPageDrawer
-        open={editPage !== null}
-        onClose={() => setEditPage(null)}
-        page={editPage}
-        onSave={handleSave}
-        onDelete={handleDelete}
-      />
+      <PagesList pages={allPages} onEdit={handleEdit} />
     </div>
-  );
+  )
 }

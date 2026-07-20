@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, X } from 'lucide-react';
+import { useCreateCustomer } from '../../../../hooks/useCustomers';
 
 interface Props {
   open: boolean;
@@ -25,6 +26,8 @@ export default function AddCustomerDrawer({ open, onClose }: Props) {
     address: '',
     note: '',
   });
+
+  const { mutate: createCustomer, isPending } = useCreateCustomer();
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -58,7 +61,19 @@ export default function AddCustomerDrawer({ open, onClose }: Props) {
     if (!form.email.trim() && !form.phone.trim()) errs.contact = 'Add an email or phone number';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    setDone(true);
+    if (submitting.current) return;
+    submitting.current = true;
+    const [firstName, ...rest] = form.name.trim().split(' ');
+    createCustomer(
+      {
+        firstName,
+        lastName: rest.join(' ') || undefined,
+        email: form.email || undefined,
+        phone: form.phone || undefined,
+        address: form.address || undefined,
+      },
+      { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } }
+    );
   };
 
   return createPortal(
@@ -170,8 +185,9 @@ export default function AddCustomerDrawer({ open, onClose }: Props) {
                   <button onClick={handleClose} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleSubmit} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-                    Save Customer
+                  <button onClick={handleSubmit} disabled={isPending} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                    {isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {isPending ? 'Saving…' : 'Save Customer'}
                   </button>
                 </div>
               )}

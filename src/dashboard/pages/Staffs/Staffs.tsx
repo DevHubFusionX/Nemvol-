@@ -5,19 +5,12 @@ import StaffsEmpty from './StaffsEmpty';
 import StaffsList, { type StaffMember } from './StaffsList';
 import AddStaffDrawer from './modals/AddStaffDrawer';
 import EditStaffDrawer from './modals/EditStaffDrawer';
+import { useStaff } from '../../../hooks/useStaff';
 
 export default function Staffs() {
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const { data: staff = [], isLoading } = useStaff();
   const [addOpen, setAddOpen] = useState(false);
   const [editMember, setEditMember] = useState<StaffMember | null>(null);
-
-  const handleAdd = (member: StaffMember) => setStaff(p => [...p, member]);
-
-  const handleSave = (updated: StaffMember) =>
-    setStaff(p => p.map(m => m.id === updated.id ? updated : m));
-
-  const handleRemove = (id: string) =>
-    setStaff(p => p.filter(m => m.id !== id));
 
   const total = staff.length;
   const admins = staff.filter(m => m.role === 'Owner' || m.role === 'Admin').length;
@@ -28,23 +21,21 @@ export default function Staffs() {
       <StaffsHeader onAdd={() => setAddOpen(true)} />
       <StaffsStats total={total} admins={admins} locations={locations} />
 
-      {staff.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+        </div>
+      ) : staff.length === 0 ? (
         <StaffsEmpty onAdd={() => setAddOpen(true)} />
       ) : (
         <StaffsList staff={staff} onEdit={setEditMember} />
       )}
 
-      <AddStaffDrawer
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onAdd={handleAdd}
-      />
+      <AddStaffDrawer open={addOpen} onClose={() => setAddOpen(false)} />
       <EditStaffDrawer
         open={editMember !== null}
         onClose={() => setEditMember(null)}
         staff={editMember}
-        onSave={handleSave}
-        onRemove={handleRemove}
       />
     </div>
   );

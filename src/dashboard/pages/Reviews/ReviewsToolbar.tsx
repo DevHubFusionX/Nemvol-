@@ -6,6 +6,8 @@ export type ReviewFilter = 'all' | 'recents' | 'low' | 'high';
 interface ReviewsToolbarProps {
   filter: ReviewFilter;
   onFilter: (f: ReviewFilter) => void;
+  q: string;
+  onSearch: (v: string) => void;
 }
 
 const filters: { id: ReviewFilter; label: string }[] = [
@@ -15,7 +17,7 @@ const filters: { id: ReviewFilter; label: string }[] = [
   { id: 'high', label: '4–5 Star Ratings' },
 ];
 
-export default function ReviewsToolbar({ filter, onFilter }: ReviewsToolbarProps) {
+export default function ReviewsToolbar({ filter, onFilter, q, onSearch }: ReviewsToolbarProps) {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [date, setDate] = useState('');
 
@@ -45,6 +47,8 @@ export default function ReviewsToolbar({ filter, onFilter }: ReviewsToolbarProps
         <input
           type="text"
           placeholder="Search by customer or product..."
+          value={q}
+          onChange={e => onSearch(e.target.value)}
           className="flex-1 bg-transparent text-[13px] text-slate-700 placeholder:text-slate-400 outline-none min-w-0"
         />
       </div>

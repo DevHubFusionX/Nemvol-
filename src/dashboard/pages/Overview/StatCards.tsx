@@ -1,13 +1,21 @@
 import { DollarSign, TrendingUp, Landmark, Users } from 'lucide-react';
-
-const stats = [
-  { label: 'Available Balance', icon: DollarSign, value: '₦0', sub: 'vs last month', change: '0%' },
-  { label: 'Total Sales', icon: TrendingUp, value: '₦0', sub: 'vs last month', change: '0%' },
-  { label: 'Total Payouts', icon: Landmark, value: '₦0', sub: 'Today: 15 Jul, 2026' },
-  { label: 'Total Customers', icon: Users, value: '0', sub: 'Today: 15 Jul, 2026' },
-];
+import { useOrders } from '../../../hooks/useOrders';
+import { useCustomers } from '../../../hooks/useCustomers';
 
 export default function StatCards() {
+  const { data: ordersData } = useOrders()
+  const { data: customersData } = useCustomers()
+
+  const totalRevenue = ordersData?.data
+    .filter(o => o.status !== 'cancelled' && o.status !== 'refunded')
+    .reduce((sum, o) => sum + parseFloat(o.total), 0) ?? 0
+
+  const stats = [
+    { label: 'Available Balance',  icon: DollarSign, value: `₦${totalRevenue.toLocaleString()}`, sub: 'Total revenue', change: null },
+    { label: 'Total Sales',        icon: TrendingUp,  value: `₦${totalRevenue.toLocaleString()}`, sub: 'All time', change: null },
+    { label: 'Total Orders',       icon: Landmark,    value: String(ordersData?.total ?? 0), sub: 'All orders' },
+    { label: 'Total Customers',    icon: Users,       value: String(customersData?.total ?? 0), sub: 'Registered' },
+  ]
   return (
     <>
       {/* Mobile — horizontal snap scroll carousel */}

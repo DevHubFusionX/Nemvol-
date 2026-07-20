@@ -1,4 +1,6 @@
 import { Check, X } from 'lucide-react';
+import { useSubscription, useInitiatePayment } from '../../../hooks/useSubscription';
+import { useProfile } from '../../../hooks/useProfile';
 
 type Plan = {
   id: string;
@@ -81,6 +83,16 @@ const plans: Plan[] = [
 ];
 
 export default function BillingPlans() {
+  const { data: sub } = useSubscription();
+  const { data: profile } = useProfile();
+  const initiate = useInitiatePayment();
+
+  const handleSelect = (planId: string) => {
+    if (!profile?.email) return;
+    initiate.mutate({ planId, email: profile.email });
+  };
+
+  const currentPlan = sub?.status === 'active' ? sub.planId : null;
   return (
     <div>
       <div className="mb-5">
@@ -189,13 +201,15 @@ export default function BillingPlans() {
 
             {/* CTA */}
             <button
-              className={`w-full py-2.5 rounded-lg text-[13px] font-semibold transition-colors ${
+              onClick={() => handleSelect(plan.id)}
+              disabled={initiate.isPending || currentPlan === plan.id}
+              className={`w-full py-2.5 rounded-lg text-[13px] font-semibold transition-colors disabled:opacity-60 ${
                 plan.highlight
                   ? 'bg-white text-slate-900 hover:bg-slate-100'
                   : 'bg-slate-900 text-white hover:bg-slate-700'
               }`}
             >
-              {plan.cta}
+              {currentPlan === plan.id ? 'Current Plan' : initiate.isPending ? 'Redirecting…' : plan.cta}
             </button>
 
             <p className={`text-[11px] text-center leading-relaxed ${plan.highlight ? 'text-slate-500' : 'text-slate-400'}`}>

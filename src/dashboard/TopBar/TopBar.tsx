@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, HelpCircle, User, Settings, LogOut } from 'lucide-react';
+import { useUser, useClerk } from '@clerk/react';
 
 interface TopBarProps {
   planLabel?: string;
   renewalDate?: string;
-  avatarInitials?: string;
   onMenuClick: () => void;
 }
 
@@ -18,12 +18,17 @@ const menuItems = [
 export default function TopBar({
   planLabel = 'Starter Plan',
   renewalDate = '19 Jul 2026',
-  avatarInitials = 'FR',
   onMenuClick,
 }: TopBarProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  const fullName = user?.fullName ?? user?.firstName ?? 'User';
+  const email = user?.primaryEmailAddress?.emailAddress ?? '';
+  const initials = fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
   // Close on outside click
   useEffect(() => {
@@ -85,9 +90,12 @@ export default function TopBar({
         <div ref={menuRef} className="relative">
           <button
             onClick={() => setOpen(v => !v)}
-            className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-[11px] font-bold tracking-wide select-none hover:bg-slate-700 transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-[11px] font-bold tracking-wide select-none hover:bg-slate-700 transition-colors overflow-hidden"
           >
-            {avatarInitials}
+            {user?.imageUrl
+              ? <img src={user.imageUrl} alt={fullName} className="w-full h-full object-cover" />
+              : initials
+            }
           </button>
 
           <AnimatePresence>
@@ -101,8 +109,8 @@ export default function TopBar({
               >
                 {/* Identity */}
                 <div className="px-4 py-3 border-b border-slate-100">
-                  <p className="text-[13px] font-bold text-slate-900 truncate">Franklin Reyes</p>
-                  <p className="text-[11px] text-slate-400 truncate">franklin@nemvol.com</p>
+                  <p className="text-[13px] font-bold text-slate-900 truncate">{fullName}</p>
+                  <p className="text-[11px] text-slate-400 truncate">{email}</p>
                 </div>
 
                 {/* Nav links */}
@@ -123,7 +131,7 @@ export default function TopBar({
                 {/* Sign out */}
                 <div className="border-t border-slate-100 py-1">
                   <button
-                    onClick={() => { setOpen(false); navigate('/login'); }}
+                    onClick={() => { setOpen(false); signOut(() => navigate('/login')); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <LogOut size={14} strokeWidth={1.8} />

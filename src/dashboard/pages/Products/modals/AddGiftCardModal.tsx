@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import SimpleModal from './SimpleModal';
+import { useCreateGiftCards } from '../../../../hooks/useGiftCards';
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -16,6 +17,8 @@ export default function AddGiftCardModal({ open, onClose }: Props) {
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<Partial<Record<'value' | 'quantity', string>>>({});
   const [done, setDone] = useState(false);
+  const createGiftCards = useCreateGiftCards();
+  const submitting = useRef(false);
 
   const finalValue = value === 'custom' ? customValue : value;
 
@@ -24,7 +27,13 @@ export default function AddGiftCardModal({ open, onClose }: Props) {
     if (!finalValue) errs.value = 'Gift card value is required';
     if (!quantity || Number(quantity) < 1) errs.quantity = 'Quantity must be at least 1';
     setErrors(errs);
-    if (Object.keys(errs).length === 0) setDone(true);
+    if (Object.keys(errs).length > 0) return;
+    if (submitting.current) return;
+    submitting.current = true;
+    createGiftCards.mutate(
+      { value: finalValue, quantity, expiresAt: expiry || undefined, message: message || undefined },
+      { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } }
+    );
   };
 
   const handleClose = () => {
@@ -121,8 +130,9 @@ export default function AddGiftCardModal({ open, onClose }: Props) {
             />
           </div>
 
-          <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-            Create Gift Card
+          <button onClick={handleSave} disabled={createGiftCards.isPending} className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {createGiftCards.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            {createGiftCards.isPending ? 'Creating…' : 'Create Gift Card'}
           </button>
         </div>
       )}

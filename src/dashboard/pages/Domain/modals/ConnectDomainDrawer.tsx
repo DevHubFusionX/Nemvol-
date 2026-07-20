@@ -1,94 +1,101 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { X, CheckCircle2, Copy, Check } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { X, CheckCircle2, Copy, Check } from 'lucide-react'
+import { useConnectDomain } from '../../../../hooks/useStorefront'
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
-  onConnect: (domain: string) => void;
+  open: boolean
+  onClose: () => void
 }
 
 const inputCls =
-  'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[13px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-slate-400 transition-colors bg-white';
+  'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[13px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-slate-400 transition-colors bg-white'
 
-const dnsRecords = [
-  { type: 'A', name: '@', value: '76.76.21.21' },
-  { type: 'CNAME', name: 'www', value: 'cname.nemvol.com' },
-];
+type DnsRecord = { type: string; name: string; value: string }
+type Step = 'enter' | 'dns' | 'done'
 
-type Step = 'enter' | 'dns' | 'done';
-
-export default function ConnectDomainDrawer({ open, onClose, onConnect }: Props) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const [step, setStep] = useState<Step>('enter');
-  const [domain, setDomain] = useState('');
-  const [error, setError] = useState('');
-  const [copied, setCopied] = useState<string | null>(null);
+export default function ConnectDomainDrawer({ open, onClose }: Props) {
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const submitting = useRef(false)
+  const [step, setStep] = useState<Step>('enter')
+  const [domain, setDomain] = useState('')
+  const [error, setError] = useState('')
+  const [copied, setCopied] = useState<string | null>(null)
+  const [dnsRecords, setDnsRecords] = useState<DnsRecord[]>([])
+  const connectDomain = useConnectDomain()
 
   const reset = () => {
-    setStep('enter');
-    setDomain('');
-    setError('');
-    setCopied(null);
-  };
+    setStep('enter')
+    setDomain('')
+    setError('')
+    setCopied(null)
+    setDnsRecords([])
+  }
 
-  const handleClose = () => { reset(); onClose(); };
-
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [open]);
+  const handleClose = () => { reset(); onClose() }
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [open]);
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [open])
 
   const handleNext = () => {
-    const trimmed = domain.trim();
-    if (!trimmed) { setError('Please enter a domain name'); return; }
-    const valid = /^([a-z0-9-]+\.)+[a-z]{2,}$/.test(trimmed.toLowerCase());
-    if (!valid) { setError('Enter a valid domain (e.g. yourdomain.com)'); return; }
-    setError('');
-    setStep('dns');
-  };
+    const trimmed = domain.trim()
+    if (!trimmed) { setError('Please enter a domain name'); return }
+    const valid = /^([a-z0-9-]+\.)+[a-z]{2,}$/.test(trimmed.toLowerCase())
+    if (!valid) { setError('Enter a valid domain (e.g. yourdomain.com)'); return }
+    setError('')
+    setStep('dns')
+  }
 
   const handleVerify = () => {
-    onConnect(domain.trim().toLowerCase());
-    setStep('done');
-  };
+    if (submitting.current) return
+    submitting.current = true
+    connectDomain.mutate(domain.trim().toLowerCase(), {
+      onSuccess: (data) => {
+        if (data.dnsRecords) setDnsRecords(data.dnsRecords)
+        setStep('done')
+      },
+      onError: () => setError('Failed to connect domain. Please try again.'),
+      onSettled: () => { submitting.current = false },
+    })
+  }
 
   const copyValue = (val: string) => {
-    navigator.clipboard.writeText(val);
-    setCopied(val);
-    setTimeout(() => setCopied(null), 2000);
-  };
+    navigator.clipboard.writeText(val)
+    setCopied(val)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  // Static fallback DNS records shown before API call
+  const displayRecords: DnsRecord[] = dnsRecords.length > 0 ? dnsRecords : [
+    { type: 'CNAME', name: domain || 'yourdomain.com', value: 'storefronts.nemvol.com' },
+    { type: 'TXT',   name: `_nemvol.${domain || 'yourdomain.com'}`, value: 'verification-token-pending' },
+  ]
 
   return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
           ref={overlayRef}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
-          onClick={e => { if (e.target === overlayRef.current) handleClose(); }}
+          onClick={e => { if (e.target === overlayRef.current) handleClose() }}
           className="fixed inset-0 z-[100] flex justify-end bg-slate-900/40 backdrop-blur-sm"
         >
           <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
             transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
             className="relative w-full sm:max-w-lg bg-white shadow-2xl shadow-slate-900/20 flex flex-col h-full"
           >
-            <button
-              onClick={handleClose}
-              className="absolute top-4 left-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10"
-            >
+            <button onClick={handleClose} className="absolute top-4 left-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10">
               <X size={15} strokeWidth={2} />
             </button>
 
@@ -111,7 +118,7 @@ export default function ConnectDomainDrawer({ open, onClose, onConnect }: Props)
                           type="text"
                           placeholder="yourdomain.com"
                           value={domain}
-                          onChange={e => { setDomain(e.target.value); setError(''); }}
+                          onChange={e => { setDomain(e.target.value); setError('') }}
                           className={inputCls}
                           autoFocus
                         />
@@ -121,12 +128,17 @@ export default function ConnectDomainDrawer({ open, onClose, onConnect }: Props)
 
                     <div className="rounded-xl border border-slate-100 p-4 space-y-2">
                       <p className="text-[13px] font-semibold text-slate-800">How it works</p>
-                      {['Enter your domain name below', 'We\'ll show you the DNS records to add', 'Add them in your domain registrar', 'Come back and verify — done'].map((step, i) => (
+                      {[
+                        'Enter your domain name below',
+                        "We'll show you the DNS records to add",
+                        'Add them in your domain registrar',
+                        'Come back and verify — done',
+                      ].map((s, i) => (
                         <div key={i} className="flex items-start gap-3">
                           <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                             {i + 1}
                           </span>
-                          <p className="text-[12px] text-slate-500">{step}</p>
+                          <p className="text-[12px] text-slate-500">{s}</p>
                         </div>
                       ))}
                     </div>
@@ -146,15 +158,13 @@ export default function ConnectDomainDrawer({ open, onClose, onConnect }: Props)
                     <div className="rounded-xl border border-slate-100 overflow-hidden">
                       <div className="grid grid-cols-[60px_1fr_1fr_36px] gap-3 px-4 py-2.5 border-b border-slate-100">
                         {['Type', 'Name', 'Value', ''].map(h => (
-                          <span key={h} className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-                            {h}
-                          </span>
+                          <span key={h} className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{h}</span>
                         ))}
                       </div>
-                      {dnsRecords.map((rec, i) => (
+                      {displayRecords.map((rec, i) => (
                         <div
-                          key={rec.type}
-                          className={`grid grid-cols-[60px_1fr_1fr_36px] gap-3 items-center px-4 py-3 ${i < dnsRecords.length - 1 ? 'border-b border-slate-100' : ''}`}
+                          key={i}
+                          className={`grid grid-cols-[60px_1fr_1fr_36px] gap-3 items-center px-4 py-3 ${i < displayRecords.length - 1 ? 'border-b border-slate-100' : ''}`}
                         >
                           <span className="text-[12px] font-bold text-slate-700">{rec.type}</span>
                           <span className="text-[12px] text-slate-600 font-mono truncate">{rec.name}</span>
@@ -165,8 +175,7 @@ export default function ConnectDomainDrawer({ open, onClose, onConnect }: Props)
                           >
                             {copied === rec.value
                               ? <Check size={13} strokeWidth={2} className="text-emerald-500" />
-                              : <Copy size={13} strokeWidth={1.8} />
-                            }
+                              : <Copy size={13} strokeWidth={1.8} />}
                           </button>
                         </div>
                       ))}
@@ -178,21 +187,17 @@ export default function ConnectDomainDrawer({ open, onClose, onConnect }: Props)
                         Once you've added the records, click Verify below. If it doesn't work immediately, try again after a few hours.
                       </p>
                     </div>
+
+                    {error && <p className="text-[11px] text-red-500">• {error}</p>}
                   </motion.div>
                 )}
 
                 {step === 'done' && (
-                  <motion.div
-                    key="done"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center text-center py-16 gap-3"
-                  >
+                  <motion.div key="done" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center text-center py-16 gap-3">
                     <CheckCircle2 size={44} className="text-emerald-500" strokeWidth={1.5} />
                     <p className="text-[15px] font-bold text-slate-900">Domain connected!</p>
                     <p className="text-[13px] text-slate-400 max-w-xs leading-relaxed">
-                      <span className="font-semibold text-slate-700">{domain}</span> has been linked
-                      to your store. DNS propagation may take up to 48 hours.
+                      <span className="font-semibold text-slate-700">{domain}</span> has been linked to your store. DNS propagation may take up to 48 hours.
                     </p>
                   </motion.div>
                 )}
@@ -216,8 +221,9 @@ export default function ConnectDomainDrawer({ open, onClose, onConnect }: Props)
                   <button onClick={() => setStep('enter')} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Back
                   </button>
-                  <button onClick={handleVerify} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-                    Verify Connection
+                  <button onClick={handleVerify} disabled={connectDomain.isPending} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                    {connectDomain.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {connectDomain.isPending ? 'Connecting…' : 'Verify Connection'}
                   </button>
                 </div>
               )}
@@ -232,5 +238,5 @@ export default function ConnectDomainDrawer({ open, onClose, onConnect }: Props)
       )}
     </AnimatePresence>,
     document.body
-  );
+  )
 }

@@ -2,20 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CheckCircle2 } from 'lucide-react';
-import type { StaffMember } from '../StaffsList';
 import { roles, roleDescriptions, type Role } from './staffRoles';
+import { useAddStaff } from '../../../../hooks/useStaff';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onAdd: (staff: StaffMember) => void;
 }
 
 const inputCls =
   'w-full px-4 py-2.5 rounded-xl border border-slate-200 text-[13px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-slate-400 transition-colors bg-white';
 
-export default function AddStaffDrawer({ open, onClose, onAdd }: Props) {
+export default function AddStaffDrawer({ open, onClose }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const submitting = useRef(false);
+  const addStaff = useAddStaff();
   const [done, setDone] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ name: '', email: '', role: 'Manager' as Role, branch: '' });
@@ -50,15 +51,12 @@ export default function AddStaffDrawer({ open, onClose, onAdd }: Props) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email address';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    onAdd({
-      id: Date.now().toString(),
-      name: form.name.trim(),
-      email: form.email.trim(),
-      role: form.role,
-      branch: form.branch.trim() || 'Main Branch',
-      status: 'active',
-    });
-    setDone(true);
+    if (submitting.current) return;
+    submitting.current = true;
+    addStaff.mutate(
+      { name: form.name.trim(), email: form.email.trim(), role: form.role, branch: form.branch.trim() || 'Main Branch', status: 'active' },
+      { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } }
+    );
   };
 
   return createPortal(
@@ -189,8 +187,9 @@ export default function AddStaffDrawer({ open, onClose, onAdd }: Props) {
                   <button onClick={handleClose} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleSubmit} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-                    Add Staff
+                  <button onClick={handleSubmit} disabled={addStaff.isPending} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                    {addStaff.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {addStaff.isPending ? 'Adding…' : 'Add Staff'}
                   </button>
                 </div>
               )}

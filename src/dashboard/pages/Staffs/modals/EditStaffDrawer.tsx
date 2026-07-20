@@ -4,13 +4,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, CheckCircle2, Trash2 } from 'lucide-react';
 import type { StaffMember } from '../StaffsList';
 import { roles, roleDescriptions, type Role } from './staffRoles';
+import { useUpdateStaff, useRemoveStaff } from '../../../../hooks/useStaff';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   staff: StaffMember | null;
-  onSave: (updated: StaffMember) => void;
-  onRemove: (id: string) => void;
 }
 
 const inputCls =
@@ -27,8 +26,11 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   );
 }
 
-export default function EditStaffDrawer({ open, onClose, staff, onSave, onRemove }: Props) {
+export default function EditStaffDrawer({ open, onClose, staff }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const submitting = useRef(false);
+  const updateStaff = useUpdateStaff();
+  const removeStaff = useRemoveStaff();
   const [done, setDone] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [form, setForm] = useState({ role: 'Manager' as Role, branch: '', status: 'active' as StaffMember['status'] });
@@ -56,11 +58,19 @@ export default function EditStaffDrawer({ open, onClose, staff, onSave, onRemove
 
   const handleSave = () => {
     if (!staff) return;
-    onSave({ ...staff, role: form.role, branch: form.branch, status: form.status });
-    setDone(true);
+    if (submitting.current) return;
+    submitting.current = true;
+    updateStaff.mutate(
+      { id: staff.id, role: form.role, branch: form.branch, status: form.status },
+      { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } }
+    );
   };
 
-  const handleRemove = () => { onRemove(staff!.id); handleClose(); };
+  const handleRemove = () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    removeStaff.mutate(staff!.id, { onSuccess: () => handleClose(), onSettled: () => { submitting.current = false; } });
+  };
 
   if (!staff) return null;
 
@@ -217,8 +227,9 @@ export default function EditStaffDrawer({ open, onClose, staff, onSave, onRemove
                   <button onClick={() => setConfirmRemove(false)} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleRemove} className="flex-1 py-3 rounded-xl bg-red-500 text-white text-[13px] font-semibold hover:bg-red-600 transition-colors">
-                    Yes, Remove
+                  <button onClick={handleRemove} disabled={removeStaff.isPending} className="flex-1 py-3 rounded-xl bg-red-500 text-white text-[13px] font-semibold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                    {removeStaff.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {removeStaff.isPending ? 'Removing…' : 'Yes, Remove'}
                   </button>
                 </div>
               ) : (
@@ -226,8 +237,9 @@ export default function EditStaffDrawer({ open, onClose, staff, onSave, onRemove
                   <button onClick={handleClose} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-                    Save Changes
+                  <button onClick={handleSave} disabled={updateStaff.isPending} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                    {updateStaff.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {updateStaff.isPending ? 'Saving…' : 'Save Changes'}
                   </button>
                 </div>
               )}

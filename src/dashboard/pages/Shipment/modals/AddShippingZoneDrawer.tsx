@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CheckCircle2, ChevronDown } from 'lucide-react';
+import { useAddShippingZone, useUpdateShippingZone, type ShippingZone } from '../../../../hooks/useShipping';
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  editZone?: ShippingZone | null;
 }
 
 const inputCls =
@@ -25,23 +27,47 @@ const rateTypes = [
   { id: 'weight', label: 'Weight-Based', desc: 'Fee calculated by item weight.' },
 ];
 
-export default function AddShippingZoneDrawer({ open, onClose }: Props) {
+const blank = { zoneName: '', rateType: 'flat', flatRate: '', minWeight: '', maxWeight: '', weightRate: '', minOrderFree: '' };
+
+export default function AddShippingZoneDrawer({ open, onClose, editZone }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const submitting = useRef(false);
+  const addZone = useAddShippingZone();
+  const updateZone = useUpdateShippingZone();
+  const isEditing = !!editZone;
+  const isPending = addZone.isPending || updateZone.isPending;
+
   const [done, setDone] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [statesOpen, setStatesOpen] = useState(false);
-  const [form, setForm] = useState({
-    zoneName: '',
-    rateType: 'flat',
-    flatRate: '',
-    minWeight: '',
-    maxWeight: '',
-    weightRate: '',
-    minOrderFree: '',
-  });
+  const [form, setForm] = useState(blank);
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+  // Hydrate when editing
+  useEffect(() => {
+    if (editZone && open) {
+      const regions: string[] = editZone.regions ? JSON.parse(editZone.regions) : [];
+      setForm({
+        zoneName: editZone.name,
+        rateType: editZone.rateType,
+        flatRate: editZone.rate ?? '',
+        minOrderFree: editZone.minOrderFree ?? '',
+        minWeight: editZone.minWeight ?? '',
+        maxWeight: editZone.maxWeight ?? '',
+        weightRate: editZone.weightRate ?? '',
+      });
+      setSelectedStates(regions);
+      setDone(false);
+      setErrors({});
+    } else if (!editZone && open) {
+      setForm(blank);
+      setSelectedStates([]);
+      setDone(false);
+      setErrors({});
+    }
+  }, [editZone, open]);
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(p => ({ ...p, [k]: e.target.value }));
 
   const toggleState = (s: string) =>
@@ -59,12 +85,7 @@ export default function AddShippingZoneDrawer({ open, onClose }: Props) {
   }, [open]);
 
   const handleClose = () => {
-    setDone(false);
-    setErrors({});
-    setForm({ zoneName: '', rateType: 'flat', flatRate: '', minWeight: '', maxWeight: '', weightRate: '', minOrderFree: '' });
-    setSelectedStates([]);
-    setStatesOpen(false);
-    onClose();
+    setDone(false); setErrors({}); setStatesOpen(false); onClose();
   };
 
   const handleSubmit = () => {
@@ -74,7 +95,27 @@ export default function AddShippingZoneDrawer({ open, onClose }: Props) {
     if (form.rateType === 'flat' && !form.flatRate) errs.flatRate = 'Flat rate amount is required';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    setDone(true);
+
+    const payload = {
+      name: form.zoneName,
+      regions: selectedStates,
+      rateType: form.rateType,
+      rate: form.rateType === 'flat' ? form.flatRate : '0',
+      minOrderFree: form.minOrderFree || undefined,
+      minWeight: form.minWeight || undefined,
+      maxWeight: form.maxWeight || undefined,
+      weightRate: form.weightRate || undefined,
+    };
+
+    if (isEditing) {
+      if (submitting.current) return;
+      submitting.current = true;
+      updateZone.mutate({ id: editZone!.id, ...payload }, { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } });
+    } else {
+      if (submitting.current) return;
+      submitting.current = true;
+      addZone.mutate(payload, { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } });
+    }
   };
 
   return createPortal(
@@ -82,56 +123,43 @@ export default function AddShippingZoneDrawer({ open, onClose }: Props) {
       {open && (
         <motion.div
           ref={overlayRef}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
           onClick={e => { if (e.target === overlayRef.current) handleClose(); }}
           className="fixed inset-0 z-[100] flex justify-end bg-slate-900/40 backdrop-blur-sm"
         >
           <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
             transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
             className="relative w-full sm:max-w-lg bg-white shadow-2xl shadow-slate-900/20 flex flex-col h-full"
           >
-            <button
-              onClick={handleClose}
-              className="absolute top-4 left-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10"
-            >
+            <button onClick={handleClose} className="absolute top-4 left-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10">
               <X size={15} strokeWidth={2} />
             </button>
 
             <div className="flex-1 overflow-y-auto px-6 pt-12 pb-4">
               <AnimatePresence mode="wait">
                 {done ? (
-                  <motion.div
-                    key="done"
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center text-center py-16 gap-3"
-                  >
+                  <motion.div key="done" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center text-center py-16 gap-3">
                     <CheckCircle2 size={44} className="text-emerald-500" strokeWidth={1.5} />
-                    <p className="text-[15px] font-bold text-slate-900">Shipping zone added!</p>
+                    <p className="text-[15px] font-bold text-slate-900">Zone {isEditing ? 'updated' : 'added'}!</p>
                     <p className="text-[13px] text-slate-400 max-w-xs leading-relaxed">
-                      <span className="font-semibold text-slate-700">{form.zoneName}</span> is now active and covers {selectedStates.length} state{selectedStates.length !== 1 ? 's' : ''}.
+                      <span className="font-semibold text-slate-700">{form.zoneName}</span> covers {selectedStates.length} state{selectedStates.length !== 1 ? 's' : ''}.
                     </p>
                   </motion.div>
                 ) : (
                   <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                     <div>
-                      <h2 className="text-[17px] font-bold text-slate-900">Add Shipping Zone</h2>
+                      <h2 className="text-[17px] font-bold text-slate-900">{isEditing ? 'Edit' : 'Add'} Shipping Zone</h2>
                       <p className="text-[12px] text-slate-400 mt-0.5">Define coverage areas and delivery rates for this zone.</p>
                     </div>
 
-                    {/* Zone name */}
                     <div>
                       <label className="block text-[13px] font-semibold text-slate-800 mb-1.5">Zone Name *</label>
                       <input type="text" placeholder="e.g. Lagos Express" value={form.zoneName} onChange={set('zoneName')} className={inputCls} />
                       {errors.zoneName && <p className="text-[11px] text-red-500 mt-1">• {errors.zoneName}</p>}
                     </div>
 
-                    {/* States */}
                     <div>
                       <label className="block text-[13px] font-semibold text-slate-800 mb-1.5">Coverage States *</label>
                       <button
@@ -153,15 +181,8 @@ export default function AddShippingZoneDrawer({ open, onClose }: Props) {
                           >
                             <div className="flex flex-wrap gap-1.5 p-3">
                               {STATES.map(s => (
-                                <button
-                                  key={s}
-                                  type="button"
-                                  onClick={() => toggleState(s)}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
-                                    selectedStates.includes(s)
-                                      ? 'bg-slate-900 text-white'
-                                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                  }`}
+                                <button key={s} type="button" onClick={() => toggleState(s)}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${selectedStates.includes(s) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                                 >
                                   {s}
                                 </button>
@@ -172,18 +193,12 @@ export default function AddShippingZoneDrawer({ open, onClose }: Props) {
                       </AnimatePresence>
                     </div>
 
-                    {/* Rate type */}
                     <div>
                       <label className="block text-[13px] font-semibold text-slate-800 mb-2">Rate Type</label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         {rateTypes.map(({ id, label, desc }) => (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => setForm(p => ({ ...p, rateType: id }))}
-                            className={`text-left p-3 rounded-xl border-2 transition-all ${
-                              form.rateType === id ? 'border-slate-900 bg-slate-50' : 'border-slate-100 hover:border-slate-200'
-                            }`}
+                          <button key={id} type="button" onClick={() => setForm(p => ({ ...p, rateType: id }))}
+                            className={`text-left p-3 rounded-xl border-2 transition-all ${form.rateType === id ? 'border-slate-900 bg-slate-50' : 'border-slate-100 hover:border-slate-200'}`}
                           >
                             <p className="text-[12px] font-bold text-slate-900">{label}</p>
                             <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{desc}</p>
@@ -192,7 +207,6 @@ export default function AddShippingZoneDrawer({ open, onClose }: Props) {
                       </div>
                     </div>
 
-                    {/* Rate config */}
                     {form.rateType === 'flat' && (
                       <div>
                         <label className="block text-[13px] font-semibold text-slate-800 mb-1.5">Flat Rate (₦) *</label>
@@ -241,8 +255,9 @@ export default function AddShippingZoneDrawer({ open, onClose }: Props) {
                   <button onClick={handleClose} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleSubmit} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-                    Save Zone
+                  <button onClick={handleSubmit} disabled={isPending} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                    {isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {isPending ? 'Saving…' : isEditing ? 'Save Changes' : 'Save Zone'}
                   </button>
                 </div>
               )}

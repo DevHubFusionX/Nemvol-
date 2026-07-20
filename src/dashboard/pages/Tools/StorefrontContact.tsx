@@ -1,26 +1,42 @@
-import { useState } from 'react';
-import { MessageCircle, Check, Pencil } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import { MessageCircle, Check, Pencil } from 'lucide-react'
+import { useToolsConfig, useSaveWhatsapp } from '../../../hooks/useTools'
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+function Toggle({ on, onToggle, disabled }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
   return (
     <button
       onClick={onToggle}
-      className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${on ? 'bg-slate-900' : 'bg-slate-200'}`}
+      disabled={disabled}
+      className={`relative w-10 h-5 rounded-full transition-colors duration-200 disabled:opacity-50 ${on ? 'bg-slate-900' : 'bg-slate-200'}`}
     >
       <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${on ? 'translate-x-5' : 'translate-x-0'}`} />
     </button>
-  );
+  )
 }
 
 export default function StorefrontContact() {
-  const [enabled, setEnabled] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [number, setNumber] = useState('');
-  const [draft, setDraft] = useState('');
+  const { data: config } = useToolsConfig()
+  const saveWhatsapp = useSaveWhatsapp()
 
-  const handleEdit = () => { setDraft(number); setEditing(true); };
-  const handleSave = () => { setNumber(draft.trim()); setEditing(false); };
-  const handleCancel = () => setEditing(false);
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  const number = config?.whatsapp ?? ''
+  const enabled = config?.toolsConfig?.whatsappEnabled ?? false
+
+  useEffect(() => {
+    if (config) setDraft(config.whatsapp ?? '')
+  }, [config])
+
+  const handleToggle = () => {
+    saveWhatsapp.mutate({ whatsappEnabled: !enabled })
+  }
+
+  const handleSave = () => {
+    saveWhatsapp.mutate({ whatsapp: draft.trim() }, {
+      onSuccess: () => setEditing(false),
+    })
+  }
 
   return (
     <div>
@@ -40,14 +56,13 @@ export default function StorefrontContact() {
                   {enabled ? 'Active' : 'Inactive'}
                 </span>
               </div>
-              <Toggle on={enabled} onToggle={() => setEnabled(v => !v)} />
+              <Toggle on={enabled} onToggle={handleToggle} disabled={saveWhatsapp.isPending} />
             </div>
 
             <p className="text-[12px] text-slate-400 mt-1.5 leading-relaxed">
               When turned on, shoppers will see a fixed WhatsApp icon across the storefront so they can message your store from any page.
             </p>
 
-            {/* Number section */}
             <div className="mt-4">
               {editing ? (
                 <div className="flex items-center gap-2">
@@ -61,12 +76,13 @@ export default function StorefrontContact() {
                   />
                   <button
                     onClick={handleSave}
-                    className="p-2 rounded-lg bg-slate-900 text-white hover:bg-slate-700 transition-colors"
+                    disabled={saveWhatsapp.isPending}
+                    className="p-2 rounded-lg bg-slate-900 text-white hover:bg-slate-700 transition-colors disabled:opacity-60"
                   >
                     <Check size={14} strokeWidth={2} />
                   </button>
                   <button
-                    onClick={handleCancel}
+                    onClick={() => setEditing(false)}
                     className="px-3 py-2 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-500 hover:bg-slate-50 transition-colors"
                   >
                     Cancel
@@ -80,7 +96,7 @@ export default function StorefrontContact() {
                     <span className="text-[12px] text-slate-400">No WhatsApp number saved yet.</span>
                   )}
                   <button
-                    onClick={handleEdit}
+                    onClick={() => { setDraft(number); setEditing(true) }}
                     className="flex items-center gap-1 text-[12px] font-medium text-slate-500 hover:text-slate-800 transition-colors"
                   >
                     <Pencil size={12} strokeWidth={1.8} />
@@ -93,5 +109,5 @@ export default function StorefrontContact() {
         </div>
       </div>
     </div>
-  );
+  )
 }

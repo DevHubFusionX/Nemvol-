@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { useCreatePurchase } from '../../../../hooks/usePurchases';
+import { useSuppliers } from '../../../../hooks/usePurchases';
 
 interface Props {
   open: boolean;
@@ -22,15 +24,18 @@ interface LineItem {
 
 export default function AddPurchaseDrawer({ open, onClose }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const submitting = useRef(false);
   const [done, setDone] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
-    supplier: '',
+    supplierId: '',
     expectedDate: '',
     status: 'Pending Delivery',
     notes: '',
   });
   const [items, setItems] = useState<LineItem[]>([{ id: 1, name: '', qty: '1', cost: '' }]);
+  const { mutate: createPurchase, isPending } = useCreatePurchase();
+  const { data: suppliers = [] } = useSuppliers();
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -63,18 +68,27 @@ export default function AddPurchaseDrawer({ open, onClose }: Props) {
   const handleClose = () => {
     setDone(false);
     setErrors({});
-    setForm({ supplier: '', expectedDate: '', status: 'Pending Delivery', notes: '' });
+    setForm({ supplierId: '', expectedDate: '', status: 'Pending Delivery', notes: '' });
     setItems([{ id: 1, name: '', qty: '1', cost: '' }]);
     onClose();
   };
 
   const handleSubmit = () => {
     const errs: Record<string, string> = {};
-    if (!form.supplier.trim()) errs.supplier = 'Supplier name is required';
+    if (!form.supplierId) errs.supplier = 'Supplier is required';
     if (items.some(i => !i.name.trim())) errs.items = 'All items need a name';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    setDone(true);
+    if (submitting.current) return;
+    submitting.current = true;
+    createPurchase({
+      supplierId: form.supplierId || undefined,
+      status: 'pending',
+      total: String(total),
+      items: JSON.stringify(items),
+      notes: form.notes,
+      expectedDate: form.expectedDate,
+    }, { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } });
   };
 
   return createPortal(
@@ -110,7 +124,7 @@ export default function AddPurchaseDrawer({ open, onClose }: Props) {
                     <CheckCircle2 size={44} className="text-emerald-500" strokeWidth={1.5} />
                     <p className="text-[15px] font-bold text-slate-900">Purchase order created!</p>
                     <p className="text-[13px] text-slate-400 max-w-xs leading-relaxed">
-                      Purchase from <span className="font-semibold text-slate-700">{form.supplier}</span> has been logged successfully.
+                      Purchase from <span className="font-semibold text-slate-700">{suppliers.find(s => s.id === form.supplierId)?.name ?? 'supplier'}</span> has been logged successfully.
                     </p>
                   </motion.div>
                 ) : (
@@ -123,13 +137,16 @@ export default function AddPurchaseDrawer({ open, onClose }: Props) {
                     {/* Supplier */}
                     <div>
                       <label className="block text-[13px] font-semibold text-slate-800 mb-1.5">Supplier *</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Lagos Wholesale Ltd"
-                        value={form.supplier}
-                        onChange={set('supplier')}
+                      <select
+                        value={form.supplierId}
+                        onChange={e => setForm(p => ({ ...p, supplierId: e.target.value }))}
                         className={inputCls}
-                      />
+                      >
+                        <option value="">Select a supplier…</option>
+                        {suppliers.map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
                       {errors.supplier && <p className="text-[11px] text-red-500 mt-1">• {errors.supplier}</p>}
                     </div>
 
@@ -225,8 +242,9 @@ export default function AddPurchaseDrawer({ open, onClose }: Props) {
                   <button onClick={handleClose} className="flex-1 py-3 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleSubmit} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-                    Save Purchase
+                  <button onClick={handleSubmit} disabled={isPending} className="flex-1 py-3 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                    {isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {isPending ? 'Saving…' : 'Save Purchase'}
                   </button>
                 </div>
               )}

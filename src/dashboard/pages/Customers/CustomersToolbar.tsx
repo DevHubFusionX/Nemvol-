@@ -6,6 +6,8 @@ export type CustomerFilter = 'all' | 'recent';
 interface CustomersToolbarProps {
   filter: CustomerFilter;
   onFilter: (f: CustomerFilter) => void;
+  q: string;
+  onSearch: (v: string) => void;
 }
 
 const filters: { id: CustomerFilter; label: string }[] = [
@@ -13,7 +15,7 @@ const filters: { id: CustomerFilter; label: string }[] = [
   { id: 'recent', label: 'Recent' },
 ];
 
-export default function CustomersToolbar({ filter, onFilter }: CustomersToolbarProps) {
+export default function CustomersToolbar({ filter, onFilter, q, onSearch }: CustomersToolbarProps) {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [date, setDate] = useState('');
 
@@ -43,6 +45,8 @@ export default function CustomersToolbar({ filter, onFilter }: CustomersToolbarP
         <input
           type="text"
           placeholder="Search customer..."
+          value={q}
+          onChange={e => onSearch(e.target.value)}
           className="flex-1 bg-transparent text-[13px] text-slate-700 placeholder:text-slate-400 outline-none min-w-0"
         />
       </div>

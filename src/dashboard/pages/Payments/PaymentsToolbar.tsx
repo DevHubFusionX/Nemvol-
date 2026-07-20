@@ -1,23 +1,27 @@
-import { useRef, useState } from 'react';
-import { Search, CalendarDays } from 'lucide-react';
+import { useRef } from 'react'
+import { Search, CalendarDays } from 'lucide-react'
 
-export type PaymentFilter = 'all' | 'pending' | 'completed' | 'failed';
+export type PaymentFilter = 'all' | 'pending' | 'confirmed' | 'delivered' | 'cancelled'
 
 interface PaymentsToolbarProps {
-  filter: PaymentFilter;
-  onFilter: (f: PaymentFilter) => void;
+  filter: PaymentFilter
+  onFilter: (f: PaymentFilter) => void
+  q: string
+  onSearch: (v: string) => void
+  date: string
+  onDate: (v: string) => void
 }
 
 const filters: { id: PaymentFilter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'completed', label: 'Completed' },
-  { id: 'failed', label: 'Failed' },
-];
+  { id: 'all',       label: 'All' },
+  { id: 'pending',   label: 'Pending' },
+  { id: 'confirmed', label: 'Confirmed' },
+  { id: 'delivered', label: 'Completed' },
+  { id: 'cancelled', label: 'Failed' },
+]
 
-export default function PaymentsToolbar({ filter, onFilter }: PaymentsToolbarProps) {
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const [date, setDate] = useState('');
+export default function PaymentsToolbar({ filter, onFilter, q, onSearch, date, onDate }: PaymentsToolbarProps) {
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -44,7 +48,9 @@ export default function PaymentsToolbar({ filter, onFilter }: PaymentsToolbarPro
         <Search size={13} className="text-slate-400 shrink-0" strokeWidth={1.8} />
         <input
           type="text"
-          placeholder="Search by reference or customer..."
+          value={q}
+          onChange={e => onSearch(e.target.value)}
+          placeholder="Search by reference or customer…"
           className="flex-1 bg-transparent text-[13px] text-slate-700 placeholder:text-slate-400 outline-none min-w-0"
         />
       </div>
@@ -55,16 +61,18 @@ export default function PaymentsToolbar({ filter, onFilter }: PaymentsToolbarPro
         className="relative flex items-center justify-center sm:justify-start gap-2 px-3 py-2 rounded-lg bg-white border border-slate-100 text-[13px] text-slate-500 hover:bg-slate-50 transition-colors shrink-0"
       >
         <CalendarDays size={13} strokeWidth={1.8} />
-        {date ? new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Select date'}
+        {date
+          ? new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+          : 'Select date'}
         <input
           ref={dateInputRef}
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={e => onDate(e.target.value)}
           className="sr-only"
           tabIndex={-1}
         />
       </button>
     </div>
-  );
+  )
 }

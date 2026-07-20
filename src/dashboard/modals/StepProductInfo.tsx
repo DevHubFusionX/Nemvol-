@@ -1,9 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-
-const categories = [
-  'Fashion & Clothing', 'Food & Beverages', 'Beauty & Skincare',
-  'Electronics', 'Home & Living', 'Health & Wellness', 'Accessories', 'Other',
-];
+import { useCategories } from '../../hooks/useCategories';
 
 interface StepProductInfoProps {
   data: { category: string; name: string; description: string };
@@ -13,6 +9,8 @@ interface StepProductInfoProps {
 }
 
 export default function StepProductInfo({ data, onChange, errors, onNext }: StepProductInfoProps) {
+  const { data: categories = [], isLoading } = useCategories();
+
   return (
     <div className="space-y-5">
       {/* Category */}
@@ -24,13 +22,16 @@ export default function StepProductInfo({ data, onChange, errors, onNext }: Step
           <select
             value={data.category}
             onChange={(e) => onChange({ category: e.target.value })}
-            className={`w-full appearance-none px-4 py-2.5 rounded-xl border text-[13px] bg-white text-slate-700 focus:outline-none transition-colors pr-9 ${
+            disabled={isLoading}
+            className={`w-full appearance-none px-4 py-2.5 rounded-xl border text-[13px] bg-white text-slate-700 focus:outline-none transition-colors pr-9 disabled:opacity-50 ${
               errors.category ? 'border-red-400 focus:border-red-400' : 'border-slate-200 focus:border-slate-400'
             }`}
           >
-            <option value="">Search or select a category or subcategory...</option>
+            <option value="">
+              {isLoading ? 'Loading categories...' : categories.length === 0 ? 'No categories yet — add one first' : 'Select a category...'}
+            </option>
             {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
           <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" strokeWidth={2} />
@@ -77,7 +78,6 @@ export default function StepProductInfo({ data, onChange, errors, onNext }: Step
         />
       </div>
 
-      {/* Footer */}
       <div className="flex justify-end pt-1">
         <button
           onClick={onNext}

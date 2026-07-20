@@ -1,4 +1,7 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { useAuth, useUser, AuthenticateWithRedirectCallback } from '@clerk/react';
+import { useEffect, useRef } from 'react';
+import { api } from '../lib/api';
 import MainLayout from '../layouts/MainLayout';
 import DashboardLayout from '../dashboard/DashboardLayout';
 import Overview from '../dashboard/pages/Overview/Overview';
@@ -19,6 +22,7 @@ import StoreInfo from '../dashboard/pages/StoreInfo/StoreInfo';
 import Staffs from '../dashboard/pages/Staffs/Staffs';
 import Billing from '../dashboard/pages/Billing/Billing';
 import Profile from '../dashboard/pages/Profile/Profile';
+import ThemeBuilder from '../dashboard/pages/ThemeBuilder/ThemeBuilder';
 import Home from '../pages/Home';
 import About from '../pages/About';
 import Team from '../pages/Team';
@@ -34,6 +38,28 @@ import Blog from '../pages/Blog';
 import Login from '../pages/Login';
 import Signup from '../pages/Signup';
 import NotFound from '../pages/NotFound';
+import StorefrontRouter from '../storefront/StorefrontRouter';
+import { FullPageLoader } from '../components/ui/LoadingSpinner';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isSignedIn, isLoaded } = useAuth()
+  const { user } = useUser()
+  const onboarded = useRef(false)
+
+  useEffect(() => {
+    if (!isSignedIn || !user || onboarded.current) return
+    onboarded.current = true
+    api.post('/auth/onboard', {
+      email: user.primaryEmailAddress?.emailAddress,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    }).catch(() => {})
+  }, [isSignedIn, user])
+
+  if (!isLoaded) return <FullPageLoader message="Authenticating..." />
+  if (!isSignedIn) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
 
 export const router = createBrowserRouter([
   {
@@ -41,12 +67,24 @@ export const router = createBrowserRouter([
     element: <Login />,
   },
   {
+    // Handles Google OAuth redirect back from Clerk
+    path: '/login/sso-callback',
+    element: <AuthenticateWithRedirectCallback
+      signInForceRedirectUrl="/dashboard"
+      signUpForceRedirectUrl="/dashboard"
+    />,
+  },
+  {
     path: '/signup',
     element: <Signup />,
   },
   {
+    path: '/dashboard/theme-builder',
+    element: <ProtectedRoute><ThemeBuilder /></ProtectedRoute>,
+  },
+  {
     path: '/dashboard',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       { path: '', element: <Overview /> },
       { path: 'storefront', element: <Storefront /> },
@@ -67,6 +105,10 @@ export const router = createBrowserRouter([
       { path: 'billing', element: <Billing /> },
       { path: 'profile', element: <Profile /> },
     ],
+  },
+  {
+    path: '/store/:slug/*',
+    element: <StorefrontRouter />,
   },
   {
     path: '/',

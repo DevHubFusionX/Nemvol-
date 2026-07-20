@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { ImagePlus, CheckCircle2 } from 'lucide-react';
 import SimpleModal from './SimpleModal';
+import { useCreateCategory } from '../../../../hooks/useCategories';
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -14,6 +15,8 @@ export default function AddCategoryModal({ open, onClose }: Props) {
   const [cover, setCover] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<'name', string>>>({});
   const [done, setDone] = useState(false);
+  const createCategory = useCreateCategory();
+  const submitting = useRef(false);
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -27,7 +30,13 @@ export default function AddCategoryModal({ open, onClose }: Props) {
   const handleSave = () => {
     if (!form.name.trim()) { setErrors({ name: 'Category name is required' }); return; }
     setErrors({});
-    setDone(true);
+    const slug = form.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    if (submitting.current) return;
+    submitting.current = true;
+    createCategory.mutate({ name: form.name.trim(), slug }, {
+      onSuccess: () => setDone(true),
+      onSettled: () => { submitting.current = false; },
+    });
   };
 
   const handleClose = () => {
@@ -91,8 +100,9 @@ export default function AddCategoryModal({ open, onClose }: Props) {
             <textarea rows={3} value={form.description} onChange={set('description')} placeholder="Describe this category..." className={`${inputCls} resize-none`} />
           </div>
 
-          <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors">
-            Save Category
+          <button onClick={handleSave} disabled={createCategory.isPending} className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {createCategory.isPending && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            {createCategory.isPending ? 'Saving…' : 'Save Category'}
           </button>
         </div>
       )}
