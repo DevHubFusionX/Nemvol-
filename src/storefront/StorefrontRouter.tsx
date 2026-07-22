@@ -1,8 +1,6 @@
 import { useParams, useNavigate, Routes, Route } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useAuth } from '@clerk/react'
 import { useEffect } from 'react'
-import { api } from '../lib/api'
 import { useStore } from '../hooks/useStore'
 import { StorefrontProvider, useStorefront } from './context/StorefrontProvider'
 import { fetchPublicStore, type PublicStoreData } from './lib/publicApi'
@@ -75,29 +73,17 @@ function StorefrontPlaceholder() {
   )
 }
 
-async function resolveStore(slug: string, isSignedIn: boolean): Promise<PublicStoreData> {
-  try {
-    return await fetchPublicStore(slug)
-  } catch (err) {
-    if (!isSignedIn) throw err
-    const res = await api.get('/store')
-    if (res.data.slug !== slug) throw new Error('Store not found')
-    return {
-      ...res.data,
-      toolsConfig: res.data.toolsConfig ? JSON.parse(res.data.toolsConfig) : {},
-      trackers: res.data.trackers ? JSON.parse(res.data.trackers) : {},
-    }
-  }
+async function resolveStore(slug: string): Promise<PublicStoreData> {
+  return await fetchPublicStore(slug)
 }
 
 export default function StorefrontRouter() {
   const { slug } = useParams<{ slug: string }>()
-  const { isSignedIn } = useAuth()
   const { data: ownerStore } = useStore()
 
   const { data: store, isLoading, isError } = useQuery<PublicStoreData>({
-    queryKey: ['public-store', slug, isSignedIn],
-    queryFn: () => resolveStore(slug!, isSignedIn ?? false),
+    queryKey: ['public-store', slug],
+    queryFn: () => resolveStore(slug!),
     enabled: !!slug,
   })
 
