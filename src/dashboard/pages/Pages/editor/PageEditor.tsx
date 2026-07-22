@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Check, Eye, EyeOff, Trash2, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Check, Eye, EyeOff, AlertTriangle } from 'lucide-react'
 import { useCreatePage, useUpdatePage, useDeletePage, type StorePage } from '../../../../hooks/useStorefront'
 import { type Block, type LayoutTemplate, blocksToHtml, htmlToBlocks } from './blocks'
 import LayoutPicker from './LayoutPicker'

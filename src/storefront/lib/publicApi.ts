@@ -52,16 +52,36 @@ export function normalizePublicProduct(p: DashboardProduct & { category?: string
     .map((m) => m.url)
 
   let tagList: string[] = []
-  try { tagList = JSON.parse(p.tags ?? '[]') } catch {}
+  try { tagList = JSON.parse(p.tags ?? '[]') } catch { }
+
+  const variants = p.variants?.map(v => ({
+    id: v.id,
+    productId: p.id,
+    sku: v.sku ?? null,
+    price: v.price,
+    compareAtPrice: v.compareAtPrice ?? null,
+    attributes: v.attributes ?? null,
+    weight: null,
+  }))
+
+  const media = p.media?.map(m => ({
+    id: m.id,
+    productId: p.id,
+    url: m.url,
+    position: m.position ?? null,
+  }))
 
   return {
     ...p,
+    description: p.description ?? null,
     sku: firstVariant?.sku ?? null,
     category: typeof p.category === 'string' ? p.category : 'General',
     price,
     compareAt,
     images,
     tagList,
+    variants,
+    media,
     stock: p.variants?.length ? 99 : 0,
     rating: p.rating ? parseFloat(p.rating) : undefined,
     reviewCount: p.reviewCount ? parseInt(p.reviewCount, 10) : undefined,
@@ -106,9 +126,9 @@ export function buildToolsConfig(store: PublicStoreData): ToolsConfig {
 }
 
 export interface PublicPaymentMethods {
-  cards?:    { enabled: boolean }
+  cards?: { enabled: boolean }
   transfer?: { enabled: boolean; bankName?: string; accountName?: string; accountNumber?: string }
-  pod?:      { enabled: boolean }
+  pod?: { enabled: boolean }
 }
 
 export async function fetchPublicPaymentMethods(slug: string): Promise<PublicPaymentMethods> {

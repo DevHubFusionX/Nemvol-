@@ -3,7 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 export function useStorefrontBase() {
   const { slug } = useParams<{ slug: string }>()
-  return slug ? `/store/${slug}` : ''
+  if (slug) return `/store/${slug}`
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/storefront-preview')) {
+    return '/storefront-preview'
+  }
+  return ''
 }
 
 export function useStorefrontPaths() {

@@ -47,7 +47,7 @@ export const useShippingZones = () =>
 export const useAddShippingZone = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: Omit<ShippingZone, 'id' | 'createdAt'> & { regions: string[] }) =>
+    mutationFn: (data: Omit<ShippingZone, 'id' | 'createdAt' | 'regions'> & { regions: string[] }) =>
       api.post('/shipping', data).then(r => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ZONES_KEY }); toast.success('Shipping zone added') },
     onError: () => toast.error('Failed to add zone'),
@@ -57,7 +57,7 @@ export const useAddShippingZone = () => {
 export const useUpdateShippingZone = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...data }: Partial<ShippingZone> & { id: string; regions?: string[] }) =>
+    mutationFn: ({ id, ...data }: Omit<Partial<ShippingZone>, 'regions'> & { id: string; regions?: string[] }) =>
       api.patch(`/shipping/${id}`, data).then(r => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ZONES_KEY }); toast.success('Zone updated') },
     onError: () => toast.error('Failed to update zone'),

@@ -1,20 +1,20 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Routes, Route } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@clerk/react'
-import { lazy, Suspense, useEffect } from 'react'
+import { useEffect } from 'react'
 import { api } from '../lib/api'
 import { useStore } from '../hooks/useStore'
 import { StorefrontProvider, useStorefront } from './context/StorefrontProvider'
 import { fetchPublicStore, type PublicStoreData } from './lib/publicApi'
-
-const THEME_MAP: Record<string, React.LazyExoticComponent<() => JSX.Element>> = {
-  nubia: lazy(() => import('./templates/nubia/NubiaTemplate')),
-  luna:  lazy(() => import('./templates/luna/LunaTemplate')),
-  nova:  lazy(() => import('./templates/nova/NovaTemplate')),
-  arc:   lazy(() => import('./templates/arc/ArcTemplate')),
-}
-
-const DEFAULT_THEME = 'nubia'
+import Navbar from './components/Navbar/Navbar'
+import Hero from './components/Hero/Hero'
+import SummerCarousel from './components/Carousel/SummerCarousel'
+import CategoryGrid from './components/Category/CategoryGrid'
+import MembershipClub from './components/Membership/MembershipClub'
+import Footer from './components/Footer/Footer'
+import ProductDetails from './components/Product/ProductDetails'
+import ProductsPage from './components/Product/ProductsPage'
+import CheckoutPage from './components/Checkout/CheckoutPage'
 
 function AccessGateGuard({ children }: { children: React.ReactNode }) {
   const { tools, accessGranted, slug } = useStorefront()
@@ -34,7 +34,7 @@ function AccessGateGuard({ children }: { children: React.ReactNode }) {
 function WhatsAppButton() {
   const { tools } = useStorefront()
   const enabled = tools?.toolsConfig?.whatsappEnabled
-  const number  = tools?.whatsapp
+  const number = tools?.whatsapp
 
   if (!enabled || !number) return null
 
@@ -55,22 +55,23 @@ function WhatsAppButton() {
   )
 }
 
-function ThemeRenderer({ theme }: { theme: string }) {
-  const Template = THEME_MAP[theme] ?? THEME_MAP[DEFAULT_THEME]
-
+function StorefrontPlaceholder() {
+  const { store } = useStorefront()
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 text-center">
+      <div className="max-w-md bg-white p-8 rounded-3xl border border-stone-200/60 shadow-sm flex flex-col items-center gap-4">
+        <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center text-stone-700">
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
         </div>
-      }
-    >
-      <AccessGateGuard>
-        <Template />
-        <WhatsAppButton />
-      </AccessGateGuard>
-    </Suspense>
+        <h1 className="text-xl font-bold text-stone-900 tracking-tight">{store?.name}</h1>
+        <p className="text-xs text-stone-500 leading-relaxed">
+          Our storefront is currently under construction. We are building a brand new shopping experience for you. Please check back soon!
+        </p>
+      </div>
+    </div>
   )
 }
 
@@ -96,7 +97,7 @@ export default function StorefrontRouter() {
 
   const { data: store, isLoading, isError } = useQuery<PublicStoreData>({
     queryKey: ['public-store', slug, isSignedIn],
-    queryFn: () => resolveStore(slug!, isSignedIn),
+    queryFn: () => resolveStore(slug!, isSignedIn ?? false),
     enabled: !!slug,
   })
 
@@ -126,8 +127,6 @@ export default function StorefrontRouter() {
     )
   }
 
-  const theme = store.theme ?? DEFAULT_THEME
-
   return (
     <StorefrontProvider slug={slug!} store={store}>
       {isOwnerPreview && (
@@ -135,7 +134,33 @@ export default function StorefrontRouter() {
           Preview mode — toggle &quot;Make it Live&quot; in your dashboard to publish this store.
         </div>
       )}
-      <ThemeRenderer theme={theme} />
+      <AccessGateGuard>
+        <div className="min-h-screen bg-stone-50 flex flex-col">
+          <Navbar />
+          <main className="flex-1">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <>
+                    <Hero />
+                    <SummerCarousel />
+                    <CategoryGrid />
+                    <MembershipClub />
+                  </>
+                }
+              />
+              <Route path="/product/:productId" element={<ProductDetails />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/category/:categoryId" element={<ProductsPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="*" element={<StorefrontPlaceholder />} />
+            </Routes>
+          </main>
+          <Footer />
+          <WhatsAppButton />
+        </div>
+      </AccessGateGuard>
     </StorefrontProvider>
   )
 }

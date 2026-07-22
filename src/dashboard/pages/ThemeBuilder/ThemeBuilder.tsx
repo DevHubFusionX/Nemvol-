@@ -1,5 +1,5 @@
 import { ArrowLeft, Settings } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useThemeBuilder, INITIAL } from './useThemeBuilder'
 import type { Section, ThemeBuilderState } from './useThemeBuilder'
@@ -14,6 +14,7 @@ export default function ThemeBuilder() {
   const { state, set, patch, setState } = useThemeBuilder()
   const [fullscreen, setFullscreen] = useState(false)
   const navigate = useNavigate()
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const { data: config, isLoading } = useStorefrontConfig()
   const update = useUpdateStorefrontConfig()
@@ -47,16 +48,20 @@ export default function ThemeBuilder() {
     }))
   }, [config, setState])
 
+  // Send current state to iframe
+  const postToIframe = useCallback((s: ThemeBuilderState) => {
+    iframeRef.current?.contentWindow?.postMessage({ type: 'THEME_BUILDER_UPDATE', state: s }, '*')
+  }, [])
+
   // Sync state to preview iframe via postMessage
   useEffect(() => {
-    const iframe = document.querySelector('iframe')
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({
-        type: 'THEME_BUILDER_UPDATE',
-        state: state
-      }, '*')
-    }
-  }, [state])
+    postToIframe(state)
+  }, [state, postToIframe])
+
+  // Re-send state after iframe finishes loading (catches initial load race)
+  const handleIframeLoad = useCallback(() => {
+    postToIframe(state)
+  }, [state, postToIframe])
 
   function handleVariant(section: keyof ThemeBuilderState, id: string) {
     patch(section, { variant: id } as never)
@@ -192,6 +197,8 @@ export default function ThemeBuilder() {
           onViewport={v => set('viewport', v)}
           fullscreen={fullscreen}
           onFullscreen={() => setFullscreen(f => !f)}
+          iframeRef={iframeRef}
+          onIframeLoad={handleIframeLoad}
         />
 
         {!fullscreen && (

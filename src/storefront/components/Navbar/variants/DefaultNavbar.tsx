@@ -1,200 +1,137 @@
-import { useState, useEffect } from 'react'
-import { Search, User, ShoppingBag } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useCart } from '../../Cart/CartContext'
-import { useStorefront } from '../../useStorefront'
-import type { StoreSettings } from '../../../types'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ShoppingBag, Heart, User, Search, ChevronDown, Menu, X } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useStorefront } from '../../../context/StorefrontProvider'
+import { useStorefrontPaths } from '../../../hooks/useStorefrontPaths'
+import CartDrawer from '../../Cart/CartDrawer'
 
-interface DefaultNavbarProps {
-  settings: StoreSettings
-  onSearchOpen: () => void
-}
-
-export default function DefaultNavbar({ settings, onSearchOpen }: DefaultNavbarProps) {
-  const { path, pages, customer } = useStorefront()
-  const { count, openCart } = useCart()
-  const { pathname } = useLocation()
-  const [scrolled, setScrolled] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-
-  const navBg = (settings as any).nav?.bg || '#ffffff'
-  const navTextColor = (settings as any).nav?.textColor || '#1c1917'
-  const logo = (settings as any).logos?.primary || settings.logoUrl
-  const accountHref = customer ? path('account') : path('login')
+export default function DefaultNavbar() {
+  const { cartCount } = useStorefront()
+  const { path } = useStorefrontPaths()
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
 
   const navLinks = [
-    { label: 'Home', href: path() },
-    { label: 'Shop', href: path('products') },
-    ...pages.map(p => ({ label: p.title, href: path(`pages/${p.slug}`) })),
+    { label: 'WOMEN', to: path('/category/women') },
+    { label: 'MEN', to: path('/category/men') },
+    { label: 'KIDS', to: path('/category/kids') },
+    { label: 'BESTSELLERS', to: path('/bestsellers') },
+    { label: 'BRAND', to: path('/brand') },
   ]
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
   return (
-    <motion.header
-      initial={{ y: -60, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'shadow-sm' : ''
-      }`}
-      style={{
-        backgroundColor: scrolled ? `${navBg}f2` : navBg,
-        color: navTextColor,
-        backdropFilter: scrolled ? 'blur(8px)' : 'none',
-      }}
-    >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link to={path()} className="flex items-center gap-2 text-xl font-bold tracking-tight" style={{ color: navTextColor }}>
-          {logo ? (
-            <img src={logo} alt={settings.storeName} className="h-8 w-auto object-contain" />
-          ) : (
-            <>{settings.storeName}<span className="text-stone-400">.</span></>
-          )}
-        </Link>
-
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8" aria-label="Main navigation">
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href
-            return (
+    <header className="sticky top-0 z-50 bg-white border-b border-stone-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20">
+          {/* Left: Desktop Navigation */}
+          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
+            {navLinks.map((link) => (
               <Link
-                key={link.label}
-                to={link.href}
-                className="text-sm transition-colors duration-200 tracking-wide pb-0.5 border-b-2"
-                style={{
-                  color: isActive ? navTextColor : `${navTextColor}bf`,
-                  borderColor: isActive ? navTextColor : 'transparent'
-                }}
+                key={link.to}
+                to={link.to}
+                className="text-[11px] font-bold tracking-widest text-stone-900 hover:text-stone-500 transition-colors duration-150"
               >
                 {link.label}
               </Link>
-            )
-          })}
-        </nav>
+            ))}
+          </nav>
 
-        {/* Icons */}
-        <div className="flex items-center gap-4">
+          {/* Left: Mobile Menu Toggle */}
           <button
-            onClick={onSearchOpen}
-            aria-label="Search"
-            className="hover:opacity-80 transition-opacity hidden sm:block"
-            style={{ color: navTextColor }}
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="lg:hidden p-2 text-stone-900 hover:text-stone-500 transition-colors duration-150"
+            aria-label="Toggle menu"
           >
-            <Search size={18} />
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <Link
-            to={accountHref}
-            aria-label={customer ? 'My account' : 'Sign in'}
-            className="relative hover:opacity-80 transition-opacity hidden sm:block"
-            style={{ color: navTextColor }}
-          >
-            <User size={18} />
-            {customer && (
-              <span
-                className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
-                style={{ backgroundColor: settings.accentColor || navTextColor }}
-              />
-            )}
+          {/* Center: Monogram Logo */}
+          <Link to={path('/')} className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center group">
+            <span className="text-2xl font-serif font-bold tracking-tighter text-stone-950 leading-none group-hover:scale-105 transition-transform duration-200">
+              N<span className="font-sans text-lg font-light align-super -ml-0.5">S</span>
+            </span>
+            <span className="text-[7px] tracking-[0.25em] text-stone-400 uppercase font-semibold mt-0.5">
+              Since
+            </span>
           </Link>
 
-          <button
-            onClick={openCart}
-            aria-label={`Cart, ${count} items`}
-            className="relative hover:opacity-80 transition-opacity"
-            style={{ color: navTextColor }}
-          >
-            <ShoppingBag size={18} />
-            {count > 0 && (
-              <span
-                className="absolute -top-1.5 -right-1.5 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-medium"
-                style={{ backgroundColor: settings.accentColor || '#1c1917' }}
-              >
-                {count}
-              </span>
-            )}
-          </button>
+          {/* Right: Actions */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Search */}
+            <button
+              className="p-2 text-stone-900 hover:text-stone-500 transition-colors duration-150"
+              aria-label="Search"
+            >
+              <Search className="w-4 h-4" />
+            </button>
 
-          {/* Mobile hamburger */}
-          <button
-            className="md:hidden flex flex-col gap-1.5 ml-2"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-            aria-expanded={menuOpen}
-          >
-            <span className={`block w-5 h-px transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} style={{ backgroundColor: navTextColor }} />
-            <span className={`block w-5 h-px transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} style={{ backgroundColor: navTextColor }} />
-            <span className={`block w-5 h-px transition-all duration-300 ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} style={{ backgroundColor: navTextColor }} />
-          </button>
+            {/* Language Selector */}
+            <button
+              className="hidden sm:flex items-center gap-1 text-[11px] font-bold tracking-wider text-stone-900 hover:text-stone-500 transition-colors duration-150"
+              aria-label="Language"
+            >
+              <span>EN</span>
+              <ChevronDown className="w-3 h-3 text-stone-400" />
+            </button>
+
+            {/* Wishlist */}
+            <button
+              className="p-2 text-stone-900 hover:text-stone-500 transition-colors duration-150"
+              aria-label="Wishlist"
+            >
+              <Heart className="w-4 h-4" />
+            </button>
+
+            {/* Account */}
+            <button
+              className="p-2 text-stone-900 hover:text-stone-500 transition-colors duration-150"
+              aria-label="Account"
+            >
+              <User className="w-4 h-4" />
+            </button>
+
+            {/* Cart */}
+            <button
+              onClick={() => setCartOpen(true)}
+              className="p-2 text-stone-900 hover:text-stone-500 transition-colors duration-150 flex items-center gap-1"
+              aria-label="Cart"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span className="text-[11px] font-bold">({cartCount})</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Drawer */}
       <AnimatePresence>
-        {menuOpen && (
-          <motion.nav
+        {mobileOpen && (
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="md:hidden overflow-hidden border-t border-stone-100/50"
-            aria-label="Mobile navigation"
-            style={{ backgroundColor: navBg }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="lg:hidden overflow-hidden border-t border-stone-100 bg-white"
           >
-            <div className="px-6 py-4 flex flex-col gap-4">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href
-                return (
-                  <Link
-                    key={link.label}
-                    to={link.href}
-                    className="text-sm tracking-wide"
-                    style={{
-                      color: isActive ? navTextColor : `${navTextColor}bf`,
-                      fontWeight: isActive ? 550 : 400
-                    }}
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
-                )
-              })}
-              <div className="border-t border-stone-100/50 pt-4 flex items-center gap-4">
+            <div className="px-4 py-4 space-y-3">
+              {navLinks.map((link) => (
                 <Link
-                  to={accountHref}
-                  onClick={() => setMenuOpen(false)}
-                  className="text-sm"
-                  style={{ color: `${navTextColor}bf` }}
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-3 py-2 rounded-lg text-xs font-bold tracking-wider text-stone-900 hover:text-stone-500 hover:bg-stone-50 transition-colors"
                 >
-                  {customer ? 'My Account' : 'Sign In'}
+                  {link.label}
                 </Link>
-                <button
-                  onClick={() => { openCart(); setMenuOpen(false) }}
-                  className="relative"
-                  style={{ color: navTextColor }}
-                >
-                  <ShoppingBag size={18} />
-                  {count > 0 && (
-                    <span
-                      className="absolute -top-1.5 -right-1.5 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: settings.accentColor || '#1c1917' }}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </button>
-              </div>
+              ))}
             </div>
-          </motion.nav>
+          </motion.div>
         )}
       </AnimatePresence>
-    </motion.header>
+
+      {/* Cart Drawer */}
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
+    </header>
   )
 }

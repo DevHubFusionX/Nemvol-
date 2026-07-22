@@ -39,6 +39,7 @@ import Login from '../pages/Login';
 import Signup from '../pages/Signup';
 import NotFound from '../pages/NotFound';
 import StorefrontRouter from '../storefront/StorefrontRouter';
+import StorefrontPreview from '../storefront/StorefrontPreview';
 import { FullPageLoader } from '../components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -53,7 +54,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       email: user.primaryEmailAddress?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
-    }).catch(() => {})
+    }).catch(() => { })
   }, [isSignedIn, user])
 
   if (!isLoaded) return <FullPageLoader message="Authenticating..." />
@@ -62,6 +63,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export const router = createBrowserRouter([
+  {
+    path: '/storefront-preview/*',
+    element: <StorefrontPreview />,
+  },
   {
     path: '/login',
     element: <Login />,

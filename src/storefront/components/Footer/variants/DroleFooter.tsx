@@ -1,118 +1,71 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { StoreSettings } from '../../../types'
-import type { StorePage } from '../../../../hooks/useStorefront'
+import { ArrowRight } from 'lucide-react'
+import { useStorefrontPaths } from '../../../hooks/useStorefrontPaths'
+import { useStorefront } from '../../../context/StorefrontProvider'
+import { useTemplateState } from '../../../hooks/useTemplateState'
+import { createPublicLead } from '../../../lib/publicApi'
+import { toast } from 'sonner'
 
-interface Props {
-  settings: StoreSettings
-  pages: StorePage[]
-  path: (p?: string) => string
-  socials: { label: string; href: string }[]
-  email: string
-  setEmail: (e: string) => void
-  categories: string[]
-}
+export default function DroleFooter() {
+  const { path } = useStorefrontPaths()
+  const { slug } = useStorefront()
+  const { footer, colors } = useTemplateState()
+  const [email, setEmail] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const accent = colors?.primary ?? '#1c1917'
 
-export default function DroleFooter({
-  settings,
-  pages,
-  path,
-  socials,
-  email,
-  setEmail,
-  categories,
-}: Props) {
-  const footerText = (settings as any).footer?.footerText || settings.tagline
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !slug) return
+    setSubmitting(true)
+    try {
+      await createPublicLead(slug, { email, source: 'newsletter' })
+      toast.success('Subscribed!')
+      setEmail('')
+    } catch { toast.error('Failed. Try again.') }
+    finally { setSubmitting(false) }
+  }
 
   return (
-    <footer className="bg-stone-900 text-stone-300 font-serif border-t border-stone-800">
-      <div className="max-w-7xl mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12 pb-16 border-b border-stone-800/80">
-          {/* Brand block */}
-          <div className="lg:col-span-4 flex flex-col gap-6 font-sans">
-            <span className="text-white text-3xl font-light tracking-tight font-serif">
-              {settings.storeName}<span className="text-stone-400">.</span>
-            </span>
-            {footerText && (
-              <p className="text-xs leading-relaxed text-stone-400 font-sans tracking-wide max-w-sm">
-                {footerText}
-              </p>
-            )}
-            <div className="flex flex-col gap-2.5 text-xs text-stone-400 tracking-wide font-sans mt-2">
-              {settings.address && <span>{settings.address}</span>}
-              {settings.phone && <span>Phone: {settings.phone}</span>}
-              {settings.whatsapp && <span>WhatsApp: {settings.whatsapp}</span>}
-            </div>
-          </div>
-
-          {/* Links */}
-          <div className="lg:col-span-2 flex flex-col gap-4 font-sans">
-            <p className="text-white text-[11px] font-bold uppercase tracking-widest">Shop Collection</p>
-            <div className="flex flex-col gap-3">
-              {categories.length > 0 ? categories.map(l => (
-                <a key={l} href={path(`products?category=${encodeURIComponent(l)}`)} className="text-xs text-stone-400 hover:text-white transition-colors duration-200">{l}</a>
-              )) : (
-                <a href={path('products')} className="text-xs text-stone-400 hover:text-white transition-colors duration-200">All Products</a>
-              )}
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="lg:col-span-2 flex flex-col gap-4 font-sans">
-            <p className="text-white text-[11px] font-bold uppercase tracking-widest">Information</p>
-            <div className="flex flex-col gap-3">
-              {pages.length > 0 ? pages.map(p => (
-                <Link key={p.id} to={path(`pages/${p.slug}`)} className="text-xs text-stone-400 hover:text-white transition-colors duration-200">{p.title}</Link>
-              )) : (
-                <span className="text-xs text-stone-500">No pages yet</span>
-              )}
-            </div>
-          </div>
-
-          {/* Newsletter */}
-          <div className="lg:col-span-4 flex flex-col gap-6 font-sans">
-            <p className="text-white text-[11px] font-bold uppercase tracking-widest">Newsletter</p>
-            <p className="text-xs text-stone-400 leading-relaxed max-w-sm">
-              Subscribe to receive updates, access to exclusive deals, and more.
-            </p>
-            <form
-              onSubmit={e => { e.preventDefault(); setEmail('') }}
-              className="flex border-b border-stone-700 pb-2"
-            >
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="Your email address"
-                className="flex-1 bg-transparent py-1 text-xs text-stone-200 placeholder-stone-600 outline-none"
-              />
-              <button
-                type="submit"
-                className="px-2 py-1 text-white text-[10px] tracking-[0.2em] uppercase hover:text-stone-400 transition-colors"
-              >
-                Join
-              </button>
-            </form>
-          </div>
+    <footer className="bg-white border-t border-stone-100 pt-20 pb-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Brand statement */}
+        <div className="pb-16 border-b border-stone-100">
+          <p className="font-serif text-4xl sm:text-6xl font-light text-stone-950 leading-tight max-w-3xl">
+            {footer?.footerText || 'Crafted for those who appreciate the details.'}
+          </p>
         </div>
 
-        {/* Footer bottom */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-10 font-sans text-[11px] text-stone-500">
-          <span>&copy; {new Date().getFullYear()} {settings.storeName}. Editorial theme.</span>
-          {socials.length > 0 && (
-            <div className="flex items-center gap-6">
-              {socials.map(({ label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors duration-200"
-                >
-                  {label}
-                </a>
-              ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 py-16 border-b border-stone-100">
+          <div>
+            <Link to={path('/')} className="font-serif text-2xl font-bold tracking-tighter text-stone-950 block mb-4">
+              N<span className="font-sans text-lg font-light align-super -ml-0.5">S</span>
+            </Link>
+          </div>
+          {[
+            { heading: 'Shop', links: [{ l: 'Women', t: '/category/women' }, { l: 'Men', t: '/category/men' }, { l: 'Kids', t: '/category/kids' }] },
+            { heading: 'Help', links: [{ l: 'Shipping', t: '/shipping' }, { l: 'Returns', t: '/returns' }, { l: 'FAQ', t: '/faq' }] },
+            { heading: 'Company', links: [{ l: 'About', t: '/about' }, { l: 'Contact', t: '/contact' }, { l: 'Privacy', t: '/privacy' }] },
+          ].map(col => (
+            <div key={col.heading}>
+              <h3 className="text-[10px] font-bold tracking-[0.2em] uppercase text-stone-400 mb-4">{col.heading}</h3>
+              <ul className="space-y-2.5">
+                {col.links.map(({ l, t }) => (
+                  <li key={t}><Link to={path(t)} className="text-[12px] text-stone-600 hover:text-stone-900 transition-colors">{l}</Link></li>
+                ))}
+              </ul>
             </div>
-          )}
+          ))}
+        </div>
+
+        <div className="pt-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+          <form onSubmit={handleSubscribe} className="flex items-center gap-3 border-b border-stone-300 pb-2 w-full max-w-sm focus-within:border-stone-900 transition-colors">
+            <input type="email" placeholder="Subscribe to our newsletter" value={email} onChange={e => setEmail(e.target.value)} disabled={submitting}
+              className="flex-1 bg-transparent text-xs text-stone-700 placeholder-stone-400 outline-none" required />
+            <button type="submit" disabled={submitting} style={{ color: accent }}><ArrowRight className="w-4 h-4" /></button>
+          </form>
+          <p className="text-[10px] text-stone-400 shrink-0">© {new Date().getFullYear()} NS Store</p>
         </div>
       </div>
     </footer>

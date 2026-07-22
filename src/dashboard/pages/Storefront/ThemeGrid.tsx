@@ -1,5 +1,5 @@
 import { useStorefrontConfig, useUpdateStorefrontConfig } from '../../../hooks/useStorefront'
-import { storefrontTemplates } from '../../../storefront/templates/registry'
+import { storefrontTemplates, TEMPLATE_PRESETS } from '../../../storefront/templates/registry'
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -17,6 +17,16 @@ export default function ThemeGrid() {
   const update = useUpdateStorefrontConfig()
 
   const activeId = config?.theme ?? 'nubia'
+
+  function handleSelect(id: string) {
+    if (id === activeId) return
+    const preset = TEMPLATE_PRESETS[id]
+    update.mutate({
+      theme: id,
+      accentColor: preset?.colors?.primary,
+      heroData: JSON.stringify(preset ?? {}),
+    })
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -40,10 +50,7 @@ export default function ThemeGrid() {
                 <p className="text-[13px] font-semibold text-slate-800">{displayName}</p>
                 <p className="text-[11px] text-slate-400">{isActive ? 'Active template' : 'Available template'}</p>
               </div>
-              <Toggle
-                on={isActive}
-                onToggle={() => { if (!isActive) update.mutate({ theme: id }) }}
-              />
+              <Toggle on={isActive} onToggle={() => handleSelect(id)} />
             </div>
           </div>
         )

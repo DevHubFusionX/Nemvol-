@@ -1,4 +1,4 @@
-import { CreditCard, CheckCircle2 } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { useSubscription } from '../../../hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 

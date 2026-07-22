@@ -14,7 +14,6 @@ export default function LeadsDrawer({ open, onClose }: Props) {
   const [query, setQuery] = useState('')
   const { data, isLoading } = useToolLeads(query || undefined)
   const deleteLead = useDeleteToolLead()
-  const [deletingId, setDeletingId] = useState('')
 
   const leads = data?.data ?? []
   const total = data?.total ?? 0

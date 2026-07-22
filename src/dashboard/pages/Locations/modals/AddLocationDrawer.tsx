@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CheckCircle2 } from 'lucide-react';
 import { useAddLocation } from '../../../../hooks/useLocations';
+import type { Location } from '../LocationsList';
 
 interface Props {
   open: boolean;

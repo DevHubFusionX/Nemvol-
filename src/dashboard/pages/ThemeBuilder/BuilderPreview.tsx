@@ -7,6 +7,8 @@ interface Props {
   onViewport: (v: ThemeBuilderState['viewport']) => void
   fullscreen: boolean
   onFullscreen: () => void
+  iframeRef: React.RefObject<HTMLIFrameElement | null>
+  onIframeLoad: () => void
 }
 
 const VIEWPORTS: { id: ThemeBuilderState['viewport']; icon: typeof Monitor; label: string }[] = [
@@ -21,7 +23,7 @@ const WIDTH: Record<ThemeBuilderState['viewport'], string> = {
   mobile: 'w-[390px]',
 }
 
-export default function BuilderPreview({ viewport, onViewport, fullscreen, onFullscreen }: Props) {
+export default function BuilderPreview({ viewport, onViewport, fullscreen, onFullscreen, iframeRef, onIframeLoad }: Props) {
   const { data: config } = useStorefrontConfig()
   const slug = config?.slug ?? ''
   const previewUrl = slug ? `/store/${slug}` : null
@@ -62,10 +64,12 @@ export default function BuilderPreview({ viewport, onViewport, fullscreen, onFul
         <div className={`${WIDTH[viewport]} h-full min-h-[600px] bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-300`}>
           {previewUrl ? (
             <iframe
+              ref={iframeRef}
               src={previewUrl}
               title="Storefront preview"
               className="w-full h-full border-0"
               style={{ minHeight: 600 }}
+              onLoad={onIframeLoad}
             />
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">

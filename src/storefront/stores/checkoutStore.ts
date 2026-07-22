@@ -11,6 +11,7 @@ export interface ShippingAddress {
   city: string
   state: string
   country: string
+  zip?: string
 }
 
 export interface SelectedShipping {

@@ -98,7 +98,6 @@ export default function AddShippingZoneDrawer({ open, onClose, editZone }: Props
 
     const payload = {
       name: form.zoneName,
-      regions: selectedStates,
       rateType: form.rateType,
       rate: form.rateType === 'flat' ? form.flatRate : '0',
       minOrderFree: form.minOrderFree || undefined,
@@ -110,11 +109,11 @@ export default function AddShippingZoneDrawer({ open, onClose, editZone }: Props
     if (isEditing) {
       if (submitting.current) return;
       submitting.current = true;
-      updateZone.mutate({ id: editZone!.id, ...payload }, { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } });
+      updateZone.mutate({ id: editZone!.id, ...payload, regions: selectedStates }, { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } });
     } else {
       if (submitting.current) return;
       submitting.current = true;
-      addZone.mutate(payload, { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } });
+      addZone.mutate({ ...payload, regions: selectedStates }, { onSuccess: () => setDone(true), onSettled: () => { submitting.current = false; } });
     }
   };
 

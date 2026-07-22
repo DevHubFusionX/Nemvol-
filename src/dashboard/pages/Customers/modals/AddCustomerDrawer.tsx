@@ -16,6 +16,7 @@ const segments = ['New', 'Active', 'VIP', 'At Risk'];
 
 export default function AddCustomerDrawer({ open, onClose }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const submitting = useRef(false);
   const [done, setDone] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
