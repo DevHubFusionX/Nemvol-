@@ -9,10 +9,11 @@ export interface StoreData {
   accentColor?: string; heroData?: string; socialLinks?: string
 }
 
-export const useStore = () =>
+export const useStore = (enabled = true) =>
   useQuery<StoreData>({
     queryKey: ['store'],
     queryFn: () => api.get('/store').then(r => r.data),
+    enabled,
   })
 
 export const useUpdateStore = () => {

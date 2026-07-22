@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Routes, Route } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@clerk/react'
 import { useEffect } from 'react'
 import { useStore } from '../hooks/useStore'
 import { StorefrontProvider, useStorefront } from './context/StorefrontProvider'
@@ -79,7 +80,8 @@ async function resolveStore(slug: string): Promise<PublicStoreData> {
 
 export default function StorefrontRouter() {
   const { slug } = useParams<{ slug: string }>()
-  const { data: ownerStore } = useStore()
+  const { isSignedIn } = useAuth()
+  const { data: ownerStore } = useStore(isSignedIn ?? false)
 
   const { data: store, isLoading, isError } = useQuery<PublicStoreData>({
     queryKey: ['public-store', slug],
